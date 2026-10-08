@@ -1,4 +1,4 @@
-import { useFrame } from "@react-three/fiber";
+import { useFrame, type ThreeElements } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { DOCK_Z, NOSE, SUN_DIR, sim } from "./sim";
@@ -40,7 +40,7 @@ function useMats() {
 
 type Mats = ReturnType<typeof useMats>;
 
-function Panel({ mats, solar, size, ...p }: { mats: Mats; solar: THREE.Material; size: [number, number, number] } & JSX.IntrinsicElements["group"]) {
+function Panel({ mats, solar, size, ...p }: { mats: Mats; solar: THREE.Material; size: [number, number, number] } & ThreeElements["group"]) {
   const arr = useMemo(
     () => [mats.alu, mats.alu, solar, mats.backsheet, mats.alu, mats.alu],
     [mats, solar],

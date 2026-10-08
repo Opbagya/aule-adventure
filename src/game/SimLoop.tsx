@@ -53,6 +53,7 @@ function fail(reason: string) {
 let alarmT = 0;
 let prevPhase = 1;
 let wasThrusting = false;
+let lastRun = -1;
 
 export function SimLoop() {
   useFrame((state, raw) => {
@@ -152,6 +153,10 @@ export function SimLoop() {
     const warnings: string[] = [];
     const threatsRaw: { i: number; tti: number; dist: number }[] = [];
 
+    if (sim.runId !== lastRun) {
+      lastRun = sim.runId;
+      prevPhase = 1;
+    }
     if (playing && !sim.docked) {
       if (sim.phase !== prevPhase) {
         if (sim.phase === 2 && prevPhase === 1) audio.voice("Servicer one, ComSat nine in visual range. Begin terminal approach.");

@@ -8,3 +8,4 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+- Game sim state lives in a mutable singleton (src/game/sim.ts) read by R3F useFrame and polled by the DOM HUD; avoids React re-renders at 60fps.

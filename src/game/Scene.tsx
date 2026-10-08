@@ -1,13 +1,14 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
-import { Bloom, ChromaticAberration, EffectComposer, ToneMapping, Vignette } from "@react-three/postprocessing";
-import { BlendFunction, ToneMappingMode } from "postprocessing";
+import { Bloom, EffectComposer, ToneMapping } from "@react-three/postprocessing";
+import { ToneMappingMode } from "postprocessing";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Earth, Starfield, Sun } from "./Earth";
 import { ComSat, Corridor, DebrisField, Servicer } from "./Models";
 import { SimLoop, Thrusters } from "./SimLoop";
 import { SUN_DIR, sim } from "./sim";
+import { Planets } from "./Planets";
 
 function Lighting() {
   const light = useRef<THREE.DirectionalLight>(null);
@@ -42,25 +43,15 @@ function Lighting() {
         shadow-normalBias={0.03}
       />
       {/* Earthshine from below, nothing from the void above */}
-      <hemisphereLight args={["#000000", "#2a5a9a", 0.45]} />
+      <hemisphereLight args={["#c4d4e8", "#2a5a9a", 0.6]} />
     </>
   );
 }
 
 function Effects() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const ca = useRef<any>(null);
-  const offset = useMemo(() => new THREE.Vector2(0.0004, 0.0004), []);
-  useFrame(() => {
-    const w = sim.angVel.length();
-    const o = 0.0003 + Math.min(0.006, w * 0.01 + sim.shake * 0.01 + sim.thrustWorld.length() * 0.0006);
-    if (ca.current?.offset) ca.current.offset.set(o, o * 0.6);
-  });
   return (
     <EffectComposer multisampling={4}>
-      <Bloom mipmapBlur luminanceThreshold={1.1} luminanceSmoothing={0.25} intensity={0.85} radius={0.75} />
-      <ChromaticAberration ref={ca} offset={offset} blendFunction={BlendFunction.NORMAL} radialModulation={false} modulationOffset={0} />
-      <Vignette darkness={0.6} offset={0.3} />
+      <Bloom luminanceThreshold={4} luminanceSmoothing={0.1} intensity={0.22} radius={0.25} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
     </EffectComposer>
   );
@@ -69,9 +60,9 @@ function Effects() {
 export function SpaceScene() {
   return (
     <Canvas
-      shadows="soft"
-      dpr={[1, 1.75]}
-      gl={{ antialias: false, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
+      shadows="basic"
+      dpr={[1, 2]}
+      gl={{ antialias: true, powerPreference: "high-performance", toneMapping: THREE.NoToneMapping, toneMappingExposure: 1.0 }}
       camera={{ fov: 55, near: 0.1, far: 90000, position: [0, 3, 1520] }}
     >
       <color attach="background" args={["#000000"]} />
@@ -87,6 +78,7 @@ export function SpaceScene() {
       <Suspense fallback={null}>
         <Earth />
       </Suspense>
+      <Suspense fallback={null}><Planets /></Suspense>
       <ComSat />
       <Corridor />
       <Servicer />

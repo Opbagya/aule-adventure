@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { DESTINATIONS, type DestinationId } from "./destinations";
 
 export const NOSE = 1.9; // servicer center -> docking ring face (local -Z)
 export const DOCK_Z = 2.4; // ComSat center -> aft LAR ring (local +Z)
@@ -47,6 +48,17 @@ export const sim = {
   time: 0,
   damp: false,
   view: 1,
+  exploring: false,
+  destination: "" as DestinationId | "",
+  transfer: 0,
+  transferActive: false,
+  transferFrom: new THREE.Vector3(),
+  transferTo: new THREE.Vector3(),
+  missionPos: new THREE.Vector3(),
+  missionVel: new THREE.Vector3(),
+  missionQuat: new THREE.Quaternion(),
+  missionAngVel: new THREE.Vector3(),
+  planetMarkers: DESTINATIONS.map((d) => ({ id: d.id, name: d.name, x: 0.5, y: 0.5, on: false, distance: 0 })),
   range: START_RANGE,
   along: START_RANGE,
   closure: 0,
@@ -85,6 +97,13 @@ export function resetSim() {
   sim.pos.set(6, 4, START_RANGE + NOSE + DOCK_Z);
   sim.vel.set(0, 0, 0);
   sim.quat.identity();
+  sim.targetAngle = 0;
+  sim.targetQuat.identity();
+  sim.exploring = false;
+  sim.destination = "";
+  sim.transferActive = false;
+  sim.transfer = 0;
+  sim.view = 1;
   sim.angVel.set(0, 0, 0);
   sim.fuel = FUEL_MAX;
   sim.hull = 100;
@@ -102,19 +121,19 @@ export function resetSim() {
   const kinds = [0, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4];
   const debris: Debris[] = [];
   for (let i = 0; i < 42; i++) {
-    const kind = kinds[Math.floor(Math.random() * kinds.length)]!;
-    const scale = kind === 2 ? 1 + Math.random() * 1.2 : 0.7 + Math.random() * 0.8;
-    const baseR = [5, 1.6, 0.7, 1.1, 0.9][kind]!;
+    const kind = i < 12 ? i % 4 : (kinds[Math.floor(Math.random() * kinds.length)] ?? 1);
+    const scale = kind === 2 ? 2 + Math.random() : 1.2 + Math.random() * 0.8;
+    const baseR = [5.8, 1.6, 0.7, 1.1, 0.9][kind] ?? 1;
     const pos = new THREE.Vector3(
-      (Math.random() - 0.5) * 220,
-      (Math.random() - 0.5) * 120,
-      230 + Math.random() * 1150,
+      i < 12 ? (i % 2 ? -1 : 1) * (8 + Math.random() * 18) : (Math.random() - 0.5) * 100,
+      i < 12 ? (Math.random() - 0.5) * 18 : (Math.random() - 0.5) * 60,
+      i < 12 ? 1465 - i * 24 : 230 + Math.random() * 1150,
     );
     const dir = Math.random() < 0.5 ? -1 : 1;
     debris.push({
       pos,
       vel: new THREE.Vector3(
-        dir * (1.5 + Math.random() * 6),
+        dir * (0.6 + Math.random() * 2),
         (Math.random() - 0.5) * 1.5,
         (Math.random() - 0.5) * 2,
       ),
@@ -133,6 +152,34 @@ export function resetSim() {
     });
   }
   sim.debris = debris;
+}
+
+export function travelTo(id: DestinationId | "mission") {
+  if (sim.transferActive || sim.docked) return;
+  if (id === "mission") {
+    if (!sim.exploring) return;
+    sim.transferTo.copy(sim.missionPos);
+    sim.destination = "";
+  } else {
+    const body = DESTINATIONS.find((d) => d.id === id);
+    if (!body) return;
+    if (!sim.exploring) {
+      sim.missionPos.copy(sim.pos);
+      sim.missionVel.copy(sim.vel);
+      sim.missionQuat.copy(sim.quat);
+      sim.missionAngVel.copy(sim.angVel);
+    }
+    sim.transferTo.copy(body.center).add(body.offset);
+    sim.destination = id;
+    sim.exploring = true;
+  }
+  sim.transferFrom.copy(sim.pos);
+  sim.transfer = 0;
+  sim.transferActive = true;
+  sim.vel.set(0, 0, 0);
+  sim.angVel.set(0, 0, 0);
+  sim.quat.identity();
+  sim.view = 1;
 }
 
 export function computeScore() {

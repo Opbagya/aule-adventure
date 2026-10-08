@@ -206,7 +206,7 @@ export function SimLoop() {
     // debris
     if (!paused) {
       for (let i = 0; i < sim.debris.length; i++) {
-        const d = sim.debris[i];
+        const d = sim.debris[i]!;
         d.pos.addScaledVector(d.vel, dt);
         if (d.pos.x > 160) d.pos.x = -160;
         if (d.pos.x < -160) d.pos.x = 160;
@@ -318,7 +318,7 @@ export function SimLoop() {
     threatsRaw.sort((a, b) => a.dist - b.dist);
     sim.threats = threatsRaw.slice(0, 6).map((t) => {
       const sp = { x: 0, y: 0, on: false, tti: t.tti, dist: t.dist };
-      project(cam, sim.debris[t.i].pos, sp);
+      project(cam, sim.debris[t.i]!.pos, sp);
       return sp;
     });
   }, -2);
@@ -387,8 +387,8 @@ export function Thrusters() {
         col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = 0;
       }
     }
-    data.geo.attributes.position.needsUpdate = true;
-    data.geo.attributes.color.needsUpdate = true;
+    data.geo.getAttribute("position").needsUpdate = true;
+    data.geo.getAttribute("color").needsUpdate = true;
   });
   return (
     <points ref={ref} geometry={data.geo} frustumCulled={false}>

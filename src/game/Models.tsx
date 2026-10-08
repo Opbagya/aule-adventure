@@ -145,11 +145,11 @@ export function Servicer() {
             [0, 0.15 * Math.sign(p[1]), 0, 0, 0, p[1] > 0 ? 0 : Math.PI],
             [0, 0, 0.15, Math.PI / 2, 0, 0],
             [0, 0, -0.15, -Math.PI / 2, 0, 0],
-          ].map((n, j) => (
-            <mesh key={j} material={mats.niobium} position={[n[0] * Math.sign(p[0] || 1), n[1], n[2]]} rotation={[n[3], n[4], n[5] * Math.sign(p[0] || 1)]}>
+          ].map((n0, j) => { const n = n0 as number[]; const sx = Math.sign(p[0]); return (
+            <mesh key={j} material={mats.niobium} position={[n[0]! * sx, n[1]!, n[2]!]} rotation={[n[3]!, n[4]!, n[5]! * sx]}>
               <coneGeometry args={[0.05, 0.1, 10, 1, true]} />
             </mesh>
-          ))}
+          ); })}
         </group>
       ))}
       {/* articulated solar wings */}
@@ -338,14 +338,14 @@ export function DebrisField() {
       wing: new THREE.BoxGeometry(0.6, 0.02, 0.32),
       foil: (() => {
         const gg = new THREE.IcosahedronGeometry(1, 1);
-        const p = gg.attributes.position;
+        const p = gg.getAttribute("position");
         for (let i = 0; i < p.count; i++) p.setXYZ(i, p.getX(i) * (1 + Math.random() * 0.4), p.getY(i) * 0.18, p.getZ(i) * (0.7 + Math.random() * 0.4));
         gg.computeVertexNormals();
         return gg;
       })(),
       rock: (() => {
         const gg = new THREE.DodecahedronGeometry(0.8, 1);
-        const p = gg.attributes.position;
+        const p = gg.getAttribute("position");
         for (let i = 0; i < p.count; i++) {
           const s = 0.75 + Math.random() * 0.45;
           p.setXYZ(i, p.getX(i) * s, p.getY(i) * s, p.getZ(i) * s);

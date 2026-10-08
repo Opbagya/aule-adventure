@@ -68,12 +68,12 @@ void main(){
 }`;
 
 export function Earth() {
-  const [day, night, clouds, spec] = useTexture([
+  const [day, night, clouds, spec] = useTexture<string[]>([
     "/textures/earth_atmos_2048.jpg",
     "/textures/earth_lights_2048.png",
     "/textures/earth_clouds_1024.png",
     "/textures/earth_specular_2048.jpg",
-  ]);
+  ]) as THREE.Texture[] as [THREE.Texture, THREE.Texture, THREE.Texture, THREE.Texture];
   const mesh = useRef<THREE.Mesh>(null);
   const mat = useMemo(() => {
     day.colorSpace = THREE.SRGBColorSpace;
@@ -113,7 +113,7 @@ export function Earth() {
   );
   useFrame((_, dt) => {
     if (mesh.current) mesh.current.rotation.y += dt * 0.004;
-    mat.uniforms.uCloudOff.value += dt * 0.00025;
+    mat.uniforms['uCloudOff']!.value += dt * 0.00025;
   });
   return (
     <group position={EARTH_C} rotation={[0.35, 0, 0.2]}>

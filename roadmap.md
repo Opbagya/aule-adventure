@@ -5,3 +5,7 @@
 - [x] Sharper rendering with restrained effects.
 - [x] Clearly visible debris; collision and thrust response verified.
 - [x] Verify introduction and flight across screen sizes.
+- [x] Restrained motion blur and light-speed boost with uncluttered travel view.
+- [x] Easier requested controls and detailed debris surfaces.
+- [x] Mars surface approach, automatic/manual landing, landing legs and side camera.
+- [x] Verify flight and Mars transfer; isolate manual ascent, final touchdown, liftoff and mission-return checks (software rendering prevented one uninterrupted full descent test).

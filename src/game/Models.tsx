@@ -3,6 +3,9 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { DOCK_Z, NOSE, SUN_DIR, sim } from "./sim";
 import { getFoil, getSolar } from "./textures";
+import { useTexture } from "@react-three/drei";
+import metalMap from "@/assets/debris-metal.jpg";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 
 const hdr = (r: number, g: number, b: number) =>
   new THREE.MeshBasicMaterial({ color: new THREE.Color(r, g, b), toneMapped: false });
@@ -146,7 +149,7 @@ export function Servicer() {
             [0, 0, 0.15, Math.PI / 2, 0, 0],
             [0, 0, -0.15, -Math.PI / 2, 0, 0],
           ].map((n0, j) => { const n = n0 as number[]; const sx = Math.sign(p[0]); return (
-            <mesh key={j} material={mats.niobium} position={[n[0]! * sx, n[1]!, n[2]!]} rotation={[n[3]!, n[4]!, n[5]! * sx]}>
+            <mesh key={j} material={mats.niobium} position={[(n[0] ?? 0) * sx, n[1] ?? 0, n[2] ?? 0]} rotation={[n[3] ?? 0, n[4] ?? 0, (n[5] ?? 0) * sx]}>
               <coneGeometry args={[0.05, 0.1, 10, 1, true]} />
             </mesh>
           ); })}
@@ -327,36 +330,33 @@ export function Corridor() {
 
 export function DebrisField() {
   const mats = useMats();
+  const texture = useTexture(metalMap);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
   const root = useMemo(() => {
     const root = new THREE.Group();
+    const worn = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.62, metalness: 0.45 });
+    const scratched = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.38, metalness: 0.85 });
     const geo = {
-      stage: new THREE.CylinderGeometry(1.6, 1.6, 9, 32, 1),
+      stage: new THREE.CylinderGeometry(1.6, 1.6, 9, 64, 12),
       band: new THREE.CylinderGeometry(1.62, 1.62, 1.2, 32, 1, true),
-      nozzle: new THREE.ConeGeometry(1.1, 1.8, 24, 1, true),
-      shard: new THREE.BoxGeometry(2.4, 0.05, 1.6),
-      cube: new THREE.BoxGeometry(0.34, 0.34, 0.68),
+      nozzle: new THREE.LatheGeometry(Array.from({ length: 24 }, (_, i) => new THREE.Vector2(0.3 + Math.pow(i / 23, 1.6) * 0.8, -i / 23 * 1.8)), 48),
+      shard: new RoundedBoxGeometry(2.4, 0.07, 1.6, 3, 0.025),
+      cube: new RoundedBoxGeometry(0.34, 0.34, 0.68, 3, 0.025),
       wing: new THREE.BoxGeometry(0.6, 0.02, 0.32),
       foil: (() => {
-        const gg = new THREE.IcosahedronGeometry(1, 1);
-        const p = gg.getAttribute("position");
-        for (let i = 0; i < p.count; i++) p.setXYZ(i, p.getX(i) * (1 + Math.random() * 0.4), p.getY(i) * 0.18, p.getZ(i) * (0.7 + Math.random() * 0.4));
-        gg.computeVertexNormals();
-        return gg;
-      })(),
-      rock: (() => {
-        const gg = new THREE.DodecahedronGeometry(0.8, 1);
+        const gg = new THREE.PlaneGeometry(2, 2, 28, 28);
         const p = gg.getAttribute("position");
         for (let i = 0; i < p.count; i++) {
-          const s = 0.75 + Math.random() * 0.45;
-          p.setXYZ(i, p.getX(i) * s, p.getY(i) * s, p.getZ(i) * s);
+          const x = p.getX(i), y = p.getY(i);
+          p.setZ(i, Math.sin(x * 12 + y * 5) * 0.08 + Math.sin(y * 18) * 0.04 + x * x * 0.15);
         }
-        gg.computeVertexNormals();
-        return gg;
+        gg.computeVertexNormals(); return gg;
       })(),
+      ring: new THREE.TorusGeometry(1.61, 0.045, 10, 64),
+      pipe: new THREE.CylinderGeometry(0.035, 0.035, 7.8, 12),
     };
-    const rockMat = new THREE.MeshStandardMaterial({ color: "#4a4440", roughness: 0.95, metalness: 0.1, flatShading: true });
     const goldFlat = mats.gold.clone();
-    goldFlat.flatShading = true;
     goldFlat.side = THREE.DoubleSide;
     for (const d of sim.debris) {
       const o = new THREE.Group();
@@ -368,26 +368,26 @@ export function DebrisField() {
         o.add(mesh);
       };
       if (d.kind === 0) {
-        add(geo.stage, mats.white);
+        add(geo.stage, worn);
+        for (const y of [-4.3, -2.8, 0, 2.8, 4.3]) add(geo.ring, scratched, [0, y, 0], [Math.PI / 2, 0, 0]);
+        for (const x of [-1, 1]) add(geo.pipe, scratched, [x * 1.5, 0, 0.55]);
         add(geo.band, mats.dark, [0, 2.6, 0]);
         add(geo.nozzle, mats.niobium, [0, -5.3, 0]);
       } else if (d.kind === 1) {
         add(geo.shard, [mats.alu, mats.alu, mats.solarBlue, mats.backsheet, mats.alu, mats.alu]);
       } else if (d.kind === 2) {
-        add(geo.cube, mats.alu);
+        add(geo.cube, scratched);
         add(geo.wing, mats.solarDeep, [0.47, 0, 0.1]);
         add(geo.wing, mats.solarDeep, [-0.47, 0, 0.1], [0.4, 0, 0]);
       } else if (d.kind === 3) {
         add(geo.foil, goldFlat);
-      } else {
-        add(geo.rock, rockMat);
       }
       o.scale.setScalar(d.scale);
       root.add(o);
     }
     return root;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mats, sim.runId]);
+  }, [mats, texture, sim.runId]);
   useFrame(() => {
     root.visible = !sim.exploring;
     root.children.forEach((c, i) => {

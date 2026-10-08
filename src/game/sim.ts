@@ -54,6 +54,18 @@ export const sim = {
   transferActive: false,
   transferFrom: new THREE.Vector3(),
   transferTo: new THREE.Vector3(),
+  boosting: false,
+  motion: 0,
+  cruise: false,
+  landing: "orbit" as "orbit" | "automatic" | "manual" | "landed",
+  surfaceOrigin: new THREE.Vector3(),
+  surfaceQuat: new THREE.Quaternion(),
+  surfacePos: new THREE.Vector3(),
+  surfaceVel: new THREE.Vector3(),
+  altitude: 0,
+  landingSpeed: 0,
+  landingQuality: "",
+  gear: 0,
   missionPos: new THREE.Vector3(),
   missionVel: new THREE.Vector3(),
   missionQuat: new THREE.Quaternion(),
@@ -103,6 +115,12 @@ export function resetSim() {
   sim.destination = "";
   sim.transferActive = false;
   sim.transfer = 0;
+  sim.boosting = false;
+  sim.motion = 0;
+  sim.cruise = false;
+  sim.landing = "orbit";
+  sim.gear = 0;
+  sim.landingQuality = "";
   sim.view = 1;
   sim.angVel.set(0, 0, 0);
   sim.fuel = FUEL_MAX;
@@ -174,12 +192,51 @@ export function travelTo(id: DestinationId | "mission") {
     sim.exploring = true;
   }
   sim.transferFrom.copy(sim.pos);
+  sim.landing = "orbit";
+  sim.gear = 0;
   sim.transfer = 0;
   sim.transferActive = true;
   sim.vel.set(0, 0, 0);
   sim.angVel.set(0, 0, 0);
   sim.quat.identity();
   sim.view = 1;
+}
+
+export function approachSurface() {
+  if (!sim.exploring || sim.destination !== "mars" || sim.transferActive || sim.landing !== "orbit") return;
+  const body = DESTINATIONS.find((d) => d.id === "mars");
+  if (!body) return;
+  sim.transferFrom.copy(sim.pos);
+  sim.transferTo.copy(body.center).add(new THREE.Vector3(0, 0, body.radius + 140));
+  sim.transfer = 0;
+  sim.transferActive = true;
+  sim.vel.set(0, 0, 0);
+}
+
+export function beginLanding(normal: THREE.Vector3, center: THREE.Vector3, radius: number) {
+  sim.surfaceOrigin.copy(center).addScaledVector(normal, radius);
+  sim.surfaceQuat.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
+  sim.surfacePos.copy(sim.pos).sub(sim.surfaceOrigin).applyQuaternion(sim.surfaceQuat.clone().invert());
+  sim.surfacePos.y = Math.max(12, Math.min(160, sim.surfacePos.y));
+  sim.surfaceVel.set(0, 0, 0);
+  sim.vel.set(0, 0, 0);
+  sim.angVel.set(0, 0, 0);
+  sim.quat.copy(sim.surfaceQuat);
+  sim.landing = "automatic";
+  sim.boosting = false;
+  sim.view = 1;
+}
+
+export function toggleLanding() {
+  if (sim.landing === "automatic") sim.landing = "manual";
+  else if (sim.landing === "manual") sim.landing = "automatic";
+}
+
+export function liftOff() {
+  if (sim.landing !== "landed") return;
+  sim.surfacePos.y = 4;
+  sim.surfaceVel.set(0, 5, 0);
+  sim.landing = "manual";
 }
 
 export function computeScore() {

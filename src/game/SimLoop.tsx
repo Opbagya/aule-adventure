@@ -5,11 +5,12 @@ import { audio } from "./audio";
 import { readAxes } from "./input";
 import {
   DOCK_Z, FUEL_MAX, NOSE, ROT_ACC, ROT_FUEL, SUN_DIR, TRANS_ACC, TUMBLE,
-  computeScore, sim, type ScreenPt,
+  beginLanding, computeScore, sim, type ScreenPt,
 } from "./sim";
 import { RCS_LOCAL } from "./Models";
 import { getGlow } from "./textures";
 import { DESTINATIONS } from "./destinations";
+import { FOOT_HEIGHT, surfaceHeight } from "./Landing";
 
 const Z = new THREE.Vector3(0, 0, 1);
 const D = new THREE.Vector3();
@@ -73,7 +74,8 @@ export function SimLoop() {
     sim.thrustWorld.set(0, 0, 0);
     sim.thrustRot.set(0, 0, 0);
 
-    if (playing && !sim.docked && !sim.transferActive) {
+    sim.boosting = false;
+    if (playing && !sim.docked && !sim.transferActive && sim.landing === "orbit") {
       if (!sim.exploring) sim.time += dt;
       const ax = readAxes();
       const fuelOk = sim.exploring || sim.fuel > 0;
@@ -81,9 +83,9 @@ export function SimLoop() {
       const cmd = T1.set(ax.pitch, ax.yaw, ax.roll);
       const rot = T2.copy(cmd).multiplyScalar(fuelOk ? ROT_ACC : 0);
       if (sim.damp && fuelOk) {
-        const desired = T3.set(0, 0, sim.range < 300 ? TUMBLE : 0).applyQuaternion(QE.copy(sim.quat).invert());
+        const desired = T3.set(0, 0, !sim.exploring && sim.range < 300 ? TUMBLE : 0).applyQuaternion(QE.copy(sim.quat).invert());
         desired.sub(sim.angVel);
-        const c = (v: number) => Math.max(-ROT_ACC, Math.min(ROT_ACC, v * 2.5));
+        const c = (v: number) => Math.max(-ROT_ACC, Math.min(ROT_ACC, v * 5));
         if (cmd.x === 0) rot.x = c(desired.x);
         if (cmd.y === 0) rot.y = c(desired.y);
         if (cmd.z === 0) rot.z = c(desired.z);
@@ -97,14 +99,27 @@ export function SimLoop() {
         sim.quat.multiply(DQ).normalize();
       }
       // --- translation ---
-      const fine = sim.exploring ? 12 : sim.range < 30 ? 0.3 : 1;
+      const body = DESTINATIONS.find((d) => d.id === sim.destination);
+      const altitude = body ? sim.pos.distanceTo(body.center) - body.radius : Infinity;
+      sim.boosting = ax.boost && (sim.exploring ? altitude > 200 : sim.range > 250) && fuelOk;
+      const fine = sim.exploring ? 30 : sim.range < 30 ? 0.3 : 3;
       const tl = T1.set(ax.sway, ax.heave, -ax.surge);
       if (tl.lengthSq() > 1) tl.normalize();
       tl.multiplyScalar(fuelOk ? TRANS_ACC * fine : 0);
       if (!sim.exploring) sim.fuel -= tl.length() * dt;
       sim.thrustWorld.copy(tl).applyQuaternion(sim.quat);
       sim.vel.addScaledVector(sim.thrustWorld, dt);
+      if (sim.boosting) {
+        const speed = sim.exploring ? Math.min(2400, Math.max(90, altitude * 1.6)) : Math.min(180, Math.max(12, (sim.range - 220) * 0.6));
+        T2.set(ax.sway * speed * 0.15, ax.heave * speed * 0.15, -speed).applyQuaternion(sim.quat);
+        sim.vel.lerp(T2, 1 - Math.exp(-4 * dt));
+      } else if (sim.cruise) {
+        const speed = sim.exploring ? Math.min(100, Math.max(6, altitude * 0.15)) : sim.range < 30 ? 0.15 : 18;
+        T2.set(ax.sway, ax.heave, -ax.surge).multiplyScalar(speed).applyQuaternion(sim.quat);
+        sim.vel.lerp(T2, 1 - Math.exp(-3 * dt));
+      }
       sim.pos.addScaledVector(sim.vel, dt);
+      if (sim.boosting) sim.thrustWorld.add(T2.set(0, 0, -8).applyQuaternion(sim.quat));
       sim.fuel = Math.max(0, sim.fuel);
 
       const thrusting = sim.thrustWorld.lengthSq() > 1e-4 || sim.thrustRot.lengthSq() > 0.004;
@@ -120,6 +135,11 @@ export function SimLoop() {
       sim.pos.lerpVectors(sim.transferFrom, sim.transferTo, e);
       if (sim.transfer >= 1) {
         sim.transferActive = false;
+        const body = DESTINATIONS.find((d) => d.id === sim.destination);
+        if (body) {
+          T1.copy(body.center).sub(sim.pos).normalize();
+          sim.quat.setFromUnitVectors(new THREE.Vector3(0, 0, -1), T1);
+        }
         if (!sim.destination) {
           sim.exploring = false;
           sim.vel.copy(sim.missionVel);
@@ -128,17 +148,65 @@ export function SimLoop() {
         }
       }
     }
-    if (playing && sim.exploring && !sim.transferActive) {
+    if (playing && sim.exploring && !sim.transferActive && sim.landing === "orbit") {
       for (const body of DESTINATIONS) {
         T1.copy(sim.pos).sub(body.center);
-        if (T1.length() < body.radius + 20) {
-          T1.normalize();
-          sim.pos.copy(body.center).addScaledVector(T1, body.radius + 20);
-          const radial = sim.vel.dot(T1);
-          if (radial < 0) sim.vel.addScaledVector(T1, -radial);
+        if (body.id === "mars" && T1.length() < body.radius + 165) {
+          beginLanding(T1.normalize(), body.center, body.radius);
+          audio.voice("Surface acquired. Landing gear deployed. Automatic descent engaged.");
+          break;
+        }
+        if (T1.length() < body.radius + 80) {
+          T1.normalize(); sim.pos.copy(body.center).addScaledVector(T1, body.radius + 80);
+          const radial = sim.vel.dot(T1); if (radial < 0) sim.vel.addScaledVector(T1, -radial);
         }
       }
     }
+    if (playing && sim.landing !== "orbit" && !sim.transferActive) {
+      sim.gear = Math.min(1, sim.gear + dt * 0.6);
+      const ground = surfaceHeight(sim.surfacePos.x, sim.surfacePos.z);
+      const alt = Math.max(0, sim.surfacePos.y - ground - FOOT_HEIGHT);
+      const ax = readAxes();
+      if (sim.landing !== "landed") {
+        if (sim.landing === "automatic") {
+          const descent = -Math.min(20, Math.max(0.3, alt * 0.4));
+          T1.set(-sim.surfacePos.x * 0.4, descent, -sim.surfacePos.z * 0.4);
+          T1.x = THREE.MathUtils.clamp(T1.x, -5, 5); T1.z = THREE.MathUtils.clamp(T1.z, -5, 5);
+          sim.surfaceVel.lerp(T1, 1 - Math.exp(-3 * dt));
+        } else {
+          // Screen-relative translation in the fixed side camera; rotation is held level.
+          T1.set(ax.surge * 3, ax.heave * 3, -ax.sway * 3);
+          sim.surfaceVel.lerp(T1, 1 - Math.exp(-4 * dt));
+          if (ax.heave === 0) sim.surfaceVel.y -= 0.6 * dt;
+        }
+        sim.surfacePos.addScaledVector(sim.surfaceVel, dt);
+        const floor = surfaceHeight(sim.surfacePos.x, sim.surfacePos.z) + FOOT_HEIGHT;
+        if (sim.surfacePos.y <= floor) {
+          const speed = sim.surfaceVel.length(); sim.landingSpeed = speed;
+          if (speed > 2) {
+            sim.surfacePos.y = floor + 1; sim.surfaceVel.y = 1.5;
+            sim.hull = Math.max(0, sim.hull - 12); sim.landing = "automatic";
+            sim.flash = "HARD CONTACT — DESCENT RECOVERY"; sim.flashT = 3; audio.impact();
+            if (sim.hull <= 0) fail("Landing impact exceeded structural limits.");
+          } else {
+            sim.surfacePos.y = floor; sim.surfaceVel.set(0, 0, 0); sim.landing = "landed";
+            sim.landingQuality = speed < 0.6 ? "Precision touchdown" : "Touchdown confirmed";
+            audio.clamp(); audio.voice("Touchdown confirmed. Welcome to Mars.");
+          }
+        }
+        if (sim.surfacePos.y > 190) {
+          sim.landing = "orbit"; sim.gear = 0;
+          sim.vel.copy(sim.surfaceVel).applyQuaternion(sim.surfaceQuat);
+        }
+      }
+      sim.pos.copy(sim.surfacePos).applyQuaternion(sim.surfaceQuat).add(sim.surfaceOrigin);
+      sim.quat.copy(sim.surfaceQuat);
+      sim.vel.copy(sim.surfaceVel).applyQuaternion(sim.surfaceQuat);
+      sim.altitude = Math.max(0, sim.surfacePos.y - surfaceHeight(sim.surfacePos.x, sim.surfacePos.z) - FOOT_HEIGHT);
+      sim.thrustWorld.copy(sim.surfaceVel).applyQuaternion(sim.surfaceQuat).multiplyScalar(0.3);
+    }
+    const motionTarget = playing && sim.landing === "orbit" ? (sim.transferActive || sim.boosting ? 1 : Math.min(0.32, sim.vel.length() / 100)) : 0;
+    sim.motion += (motionTarget - sim.motion) * (1 - Math.exp(-4 * dt));
 
     // --- docked: capture animation ---
     if (sim.docked) {
@@ -306,6 +374,13 @@ export function SimLoop() {
       cam.up.set(0, 1, 0);
       cam.lookAt(sim.pos.x - 6, sim.pos.y, sim.pos.z - 3);
       cam.fov = 52;
+    } else if (sim.landing !== "orbit") {
+      const lift = Math.min(18, sim.altitude * 0.18);
+      T1.copy(sim.surfacePos).add(new THREE.Vector3(34 + lift, 9 + lift * 0.4, 12)).applyQuaternion(sim.surfaceQuat).add(sim.surfaceOrigin);
+      cam.position.copy(T1);
+      cam.up.set(0, 1, 0).applyQuaternion(sim.surfaceQuat);
+      cam.lookAt(T2.copy(sim.pos).add(T3.set(0, -1, 0).applyQuaternion(sim.surfaceQuat)));
+      cam.fov = 48;
     } else if (sim.view === 0) {
       cam.position.copy(N).add(T1.set(0, 0.2, -0.1).applyQuaternion(sim.quat));
       cam.quaternion.copy(sim.quat);
@@ -328,6 +403,7 @@ export function SimLoop() {
       cam.position.add(T1.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(sim.shake * (sim.view === 0 ? 0.25 : 1)));
       sim.shake *= Math.exp(-7 * dt);
     }
+    if (sim.landing === "orbit" && sim.screen !== "briefing") cam.fov += sim.motion * 14;
     cam.updateProjectionMatrix();
     cam.updateMatrixWorld();
 
@@ -408,12 +484,12 @@ export function Thrusters() {
       }
     }
     for (let i = 0; i < MAX; i++) {
-      if (life[i]! > 0) {
-        life[i]! -= dt;
-        pos[i * 3]! += vel[i * 3]! * dt;
-        pos[i * 3 + 1]! += vel[i * 3 + 1]! * dt;
-        pos[i * 3 + 2]! += vel[i * 3 + 2]! * dt;
-        const l = Math.max(0, life[i]!) * 2.4;
+      if ((life[i] ?? 0) > 0) {
+        life[i] = (life[i] ?? 0) - dt;
+        pos[i * 3] = (pos[i * 3] ?? 0) + (vel[i * 3] ?? 0) * dt;
+        pos[i * 3 + 1] = (pos[i * 3 + 1] ?? 0) + (vel[i * 3 + 1] ?? 0) * dt;
+        pos[i * 3 + 2] = (pos[i * 3 + 2] ?? 0) + (vel[i * 3 + 2] ?? 0) * dt;
+        const l = Math.max(0, (life[i] ?? 0)) * 2.4;
         col[i * 3] = 1.6 * l;
         col[i * 3 + 1] = 2.0 * l;
         col[i * 3 + 2] = 2.8 * l;

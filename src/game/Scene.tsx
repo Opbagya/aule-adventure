@@ -9,6 +9,9 @@ import { ComSat, Corridor, DebrisField, Servicer } from "./Models";
 import { SimLoop, Thrusters } from "./SimLoop";
 import { SUN_DIR, sim } from "./sim";
 import { Planets } from "./Planets";
+import { LandingGear, LandingSurface } from "./Landing";
+import { MotionBlur, SpeedStreaks } from "./FlightEffects";
+import { Asteroids } from "./Asteroids";
 
 function Lighting() {
   const light = useRef<THREE.DirectionalLight>(null);
@@ -53,6 +56,7 @@ function Effects() {
     <EffectComposer multisampling={4}>
       <Bloom luminanceThreshold={4} luminanceSmoothing={0.1} intensity={0.22} radius={0.25} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+      <MotionBlur />
     </EffectComposer>
   );
 }
@@ -82,7 +86,9 @@ export function SpaceScene() {
       <ComSat />
       <Corridor />
       <Servicer />
-      <DebrisField />
+       <Suspense fallback={null}><DebrisField /><Asteroids /><LandingSurface /></Suspense>
+       <LandingGear />
+       <SpeedStreaks />
       <Thrusters />
       <Effects />
     </Canvas>

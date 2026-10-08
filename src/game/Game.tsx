@@ -1,20 +1,24 @@
 import { useEffect, useState } from "react";
 import { audio } from "./audio";
 import { attachKeyboard } from "./input";
-import { resetSim, sim } from "./sim";
+import { approachSurface, liftOff, resetSim, sim, toggleLanding } from "./sim";
 import { SpaceScene } from "./Scene";
 import { HUD, TouchControls, useTick } from "./HUD";
 import { Briefing } from "./Briefing";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Globe2, Pause, Play } from "lucide-react";
+import { ArrowLeft, ArrowRight, Globe2, Pause, Play, Rocket, Gauge, Navigation, ArrowDownToLine } from "lucide-react";
 import { travelTo } from "./sim";
 import { DESTINATIONS } from "./destinations";
+import { touch } from "./input";
 
 const CONTROLS: [string, string][] = [
-  ["W / S", "Pitch down / up"],
+  ["W / S", "Pitch up / down"],
   ["A / D", "Yaw left / right"],
   ["Q / E", "Roll CCW / CW"],
-  ["Shift (or R, ↑)", "Forward translation"],
+  ["↑ / R", "Forward translation"],
+  ["Shift", "Hyperdrive (hold)"],
+  ["L", "Automatic / manual landing"],
+  ["Landing", "Space/C rise/descend · arrows translate"],
   ["Ctrl (or F, ↓)", "Retrograde translation"],
   ["Space / C", "Heave up / down"],
   ["← / →", "Sway left / right"],
@@ -88,6 +92,8 @@ export function Game() {
     resetSim();
     setRun((r) => r + 1);
     sim.view = 1;
+    sim.damp = true;
+    sim.cruise = true;
     sim.screen = "playing";
     audio.voice("Aule Servicer one, you are go for proximity operations.");
   };
@@ -100,6 +106,7 @@ export function Game() {
       if (sim.screen !== "playing") return;
       if (code === "KeyV") cycleView();
       if (code === "KeyX") toggleDamp();
+      if (code === "KeyL") toggleLanding();
     });
   }, []);
 
@@ -110,6 +117,13 @@ export function Game() {
       {(s === "playing" || s === "paused") && <HUD />}
       {s === "playing" && <div className="fixed bottom-7 left-1/2 z-20 flex w-max max-w-[95vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border border-foreground/15 bg-background/85 p-2 font-brand text-foreground">
         {sim.exploring && <Button size="sm" variant="ghost" disabled={sim.transferActive} onClick={() => travelTo("mission")}><ArrowLeft /> Mission</Button>}
+        {sim.landing === "orbit" && <>
+        <Button size="sm" variant="ghost" title="Toggle assisted flight" onClick={() => { sim.cruise = !sim.cruise; sim.damp = sim.cruise; }}><Gauge />{sim.cruise ? "Assisted" : "Newtonian"}</Button>
+        <Button size="sm" variant="ghost" disabled={sim.transferActive} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); touch.boost = true; }} onPointerUp={() => { touch.boost = false; }} onPointerCancel={() => { touch.boost = false; }} onLostPointerCapture={() => { touch.boost = false; }}><Rocket />Boost</Button>
+        </>}
+        {sim.destination === "mars" && sim.landing === "orbit" && <Button size="sm" variant="ghost" disabled={sim.transferActive} onClick={approachSurface}><ArrowDownToLine />Approach surface</Button>}
+        {sim.landing !== "orbit" && sim.landing !== "landed" && <Button size="sm" variant="ghost" onClick={toggleLanding}><Navigation />{sim.landing === "automatic" ? "Manual landing" : "Auto land"}</Button>}
+        {sim.landing === "landed" && <Button size="sm" variant="ghost" onClick={liftOff}><Rocket />Lift off</Button>}
         {DESTINATIONS.map((d) => <Button key={d.id} size="sm" variant="ghost" disabled={sim.transferActive || sim.docked} onClick={() => travelTo(d.id)} className={sim.destination === d.id ? "bg-brand-accent/25" : ""}><Globe2 /> {d.name}<ArrowRight /></Button>)}
         <Button size="icon" variant="ghost" aria-label="Pause mission" onClick={togglePause}><Pause /></Button>
       </div>}

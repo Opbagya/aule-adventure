@@ -16,7 +16,7 @@ export function Planets() {
   return <>{DESTINATIONS.map((body, i) => (
     <mesh key={body.id} position={body.center} ref={(m) => { meshes.current[i] = m; }} rotation={[0.08, 0.6, 0]}>
       <sphereGeometry args={[body.radius, 80, 56]} />
-      <meshStandardMaterial map={textures[i]} roughness={0.96} metalness={0} />
+      <meshStandardMaterial map={textures[i] ?? null} roughness={0.96} metalness={0} />
     </mesh>
   ))}</>;
 }

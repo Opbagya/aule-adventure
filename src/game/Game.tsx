@@ -116,39 +116,6 @@ export function Game() {
       {s === "playing" && isTouch && <TouchControls onDamp={toggleDamp} onView={cycleView} onPause={togglePause} />}
 
       {s === "briefing" && <Briefing onStart={start} controls={<Controls />} />}
-      {false && (
-        <Panel>
-          <div className="text-xs tracking-[0.4em] text-hud/70">AULE SPACE · MISSION BRIEFING</div>
-          <h1 className="mt-2 font-display text-4xl font-bold leading-none tracking-[0.12em] text-foreground sm:text-6xl">
-            AULE SPACE: <span className="text-hud">ORBITAL RPOD</span> SIMULATOR
-          </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            LEO, 450 km. <span className="text-foreground">ComSat-9</span> has exhausted its station-keeping propellant and is tumbling at
-            0.5 rpm. Pilot the <span className="text-hud">Aule Servicer-1</span> 1.5 km through a debris field, enter the docking corridor,
-            match its roll, and capture the aft launch-adapter ring at under 0.20 m/s and 3.5° of misalignment.
-          </p>
-          <div className="mt-5 grid grid-cols-3 gap-3 text-xs tracking-[0.15em]">
-            {[["PH-1", "Transit 1500→200 m", "Avoid debris"], ["PH-2", "Approach 200→15 m", "Fly the corridor"], ["PH-3", "Capture < 15 m", "≤0.20 m/s · ≤3.5°"]].map(([a, b, c]) => (
-              <div key={a} className="border border-hud/25 p-3">
-                <div className="font-display text-lg font-bold text-hud">{a}</div>
-                <div className="text-foreground">{b}</div>
-                <div className="text-muted-foreground">{c}</div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6">
-            <Controls />
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">Tip: tap X for the damper — inside 300 m it auto rate-matches the target's tumble. Touch devices get twin joysticks.</p>
-          <div className="mt-6 flex flex-wrap items-center gap-4">
-            <Btn primary onClick={start}>BEGIN MISSION</Btn>
-            <a href="https://aule.space/" target="_blank" rel="noreferrer" className="text-xs tracking-[0.2em] text-hud/70 underline-offset-4 hover:underline">
-              AULE.SPACE ↗
-            </a>
-          </div>
-        </Panel>
-      )}
-
       {s === "paused" && (
         <Panel>
           <h2 className="font-display text-4xl font-bold tracking-[0.2em] text-hud">PAUSED</h2>

@@ -284,7 +284,7 @@ export function SimLoop() {
       cam.quaternion.copy(sim.quat);
       cam.fov = 62;
     } else if (sim.view === 1) {
-      const desired = T1.set(0, 2.4, 10).applyQuaternion(sim.quat).add(sim.pos);
+      const desired = T1.set(0, 3.4, 15).applyQuaternion(sim.quat).add(sim.pos);
       if (cam.position.distanceTo(desired) > 60) cam.position.copy(desired);
       cam.position.lerp(desired, sim.screen === "success" ? 0.02 : k);
       cam.up.lerp(T2.set(0, 1, 0).applyQuaternion(sim.quat), k).normalize();

@@ -32,7 +32,7 @@ void main(){
   float cl = clamp(ct.r * ct.a, 0.0, 1.0);
   float spec = texture2D(uSpec, vUv).r;
   float dl = clamp(ndl * 1.15 + 0.04, 0.0, 1.0);
-  vec3 col = mix(day * 1.1, vec3(1.0), cl * 0.92) * dl * 3.2;
+  vec3 col = mix(day * 1.25, vec3(0.92), cl * 0.8) * dl * 1.7;
   vec3 H = normalize(uSun + V);
   float sp = pow(max(dot(N, H), 0.0), 70.0) * spec * (1.0 - cl);
   col += vec3(1.0, 0.92, 0.8) * sp * dl * 6.0;

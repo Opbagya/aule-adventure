@@ -15,11 +15,11 @@ function useMats() {
     const blue = getSolar("blue");
     return {
       gold: new THREE.MeshPhysicalMaterial({
-        map: gold.map, bumpMap: gold.bump, bumpScale: 2.5, metalness: 0.9, roughness: 0.26,
+        map: gold.map, bumpMap: gold.bump, bumpScale: 1.2, metalness: 0.9, roughness: 0.2, envMapIntensity: 2.2, color: "#ffe6a8",
         clearcoat: 0.3, clearcoatRoughness: 0.2,
       }),
       silver: new THREE.MeshPhysicalMaterial({
-        map: silver.map, bumpMap: silver.bump, bumpScale: 2.5, metalness: 0.9, roughness: 0.22,
+        map: silver.map, bumpMap: silver.bump, bumpScale: 1.2, metalness: 0.9, roughness: 0.2, envMapIntensity: 1.8,
       }),
       alu: new THREE.MeshStandardMaterial({ color: "#c9ccd1", metalness: 0.92, roughness: 0.22 }),
       dark: new THREE.MeshStandardMaterial({ color: "#1b1d22", metalness: 0.6, roughness: 0.45 }),

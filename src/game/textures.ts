@@ -30,7 +30,7 @@ export function getFoil(tint: "gold" | "silver") {
       const y = Math.random() * S;
       const r = 8 + Math.random() * 38;
       const pts = [0, 1, 2].map(() => [x + (Math.random() - 0.5) * r * 2, y + (Math.random() - 0.5) * r * 2] as [number, number]) as [[number, number], [number, number], [number, number]];
-      const l = 30 + Math.random() * 45;
+      const l = 45 + Math.random() * 40;
       const bl = Math.floor(Math.random() * 255);
       for (const [ctx, fill] of [
         [g, `hsla(${hue + (Math.random() - 0.5) * 10},${sat}%,${l}%,0.55)`],

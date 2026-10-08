@@ -1,11 +1,11 @@
 const keys = new Set<string>();
 
-export const touch = { tx: 0, ty: 0, rx: 0, ry: 0, roll: 0, heave: 0 };
+export const touch = { tx: 0, ty: 0, rx: 0, ry: 0, roll: 0, heave: 0, boost: false };
 
 const GAME_KEYS = new Set([
   "Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "ShiftLeft", "ShiftRight",
   "ControlLeft", "ControlRight", "KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "KeyC",
-  "KeyR", "KeyF", "KeyX", "KeyV",
+  "KeyR", "KeyF", "KeyX", "KeyV", "KeyL",
 ]);
 
 export function attachKeyboard(onPress: (code: string) => void) {
@@ -32,13 +32,14 @@ const clamp = (v: number) => Math.max(-1, Math.min(1, v));
 export function readAxes() {
   return {
     surge: clamp(
-      k("ShiftLeft") + k("ShiftRight") + k("KeyR") + k("ArrowUp") -
+      k("KeyR") + k("ArrowUp") -
         k("ControlLeft") - k("ControlRight") - k("KeyF") - k("ArrowDown") + touch.ty,
     ),
     sway: clamp(k("ArrowRight") - k("ArrowLeft") + touch.tx),
     heave: clamp(k("Space") - k("KeyC") + touch.heave),
-    pitch: clamp(k("KeyS") - k("KeyW") - touch.ry),
+    pitch: clamp(k("KeyW") - k("KeyS") + touch.ry),
     yaw: clamp(k("KeyA") - k("KeyD") - touch.rx),
     roll: clamp(k("KeyQ") - k("KeyE") + touch.roll),
+    boost: keys.has("ShiftLeft") || keys.has("ShiftRight") || touch.boost,
   };
 }

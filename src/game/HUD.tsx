@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { FUEL_MAX, sim } from "./sim";
 import { touch } from "./input";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export function useTick(hz: number) {
   const [, set] = useState(0);
@@ -45,6 +46,15 @@ function Bar({ label, value, tone }: { label: string; value: number; tone: "ok" 
 
 export function HUD() {
   useTick(20);
+  const travel = sim.transferActive || sim.boosting || sim.exploring || (sim.range > 200 && sim.vel.length() > 2);
+  if (travel) return <div className="pointer-events-none fixed inset-0 z-10 font-brand text-foreground">
+    <div className="absolute left-5 top-5 text-sm">aule space <span className="ml-3 text-foreground/50">{sim.landing !== "orbit" ? "MARS / SURFACE OPERATIONS" : sim.exploring ? sim.destination.toUpperCase() : "ORBITAL TRANSIT"}</span></div>
+    <div className="absolute right-5 top-5 text-right text-sm tabular-nums">
+      {sim.landing !== "orbit" ? <><div>{sim.landing === "landed" ? sim.landingQuality : sim.landing === "automatic" ? "Automatic descent" : "Manual descent"}</div><div className="mt-2 text-foreground/70">{sim.altitude.toFixed(1)} m · {Math.abs(sim.surfaceVel.y).toFixed(2)} m/s</div></> : <><div>{sim.transferActive ? `TRANSFER ${Math.round(sim.transfer * 100)}%` : sim.boosting ? "HYPERDRIVE" : `${sim.vel.length().toFixed(0)} m/s`}</div>{!sim.exploring && <div className="mt-2 text-foreground/60">ComSat-9 · {(sim.range / 1000).toFixed(2)} km</div>}</>}
+    </div>
+    {sim.warnings.length > 0 && <div className="absolute left-1/2 top-20 -translate-x-1/2 text-sm text-hud-danger">{sim.warnings[0]}</div>}
+    {sim.flashT > 0 && <div className="absolute left-1/2 top-28 max-w-[90vw] -translate-x-1/2 text-center text-sm">{sim.flash}</div>}
+  </div>;
   const t = sim.targetScreen;
   const fuelPct = (sim.fuel / FUEL_MAX) * 100;
   const closeTone = sim.range < 50 && sim.closure > 0.3 ? "danger" : sim.closure > 2 && sim.range < 200 ? "warn" : "ok";
@@ -180,7 +190,7 @@ export function HUD() {
       )}
 
       <div className="absolute bottom-3 left-1/2 hidden -translate-x-1/2 whitespace-nowrap text-[10px] tracking-[0.2em] text-hud/45 md:block">
-        W/S PITCH · A/D YAW · Q/E ROLL · SHIFT/R FWD · CTRL/F AFT · SPACE/C HEAVE · ←/→ SWAY · X DAMPER · V VIEW · P PAUSE
+        W/S PITCH · A/D YAW · Q/E ROLL · ↑/R FWD · SHIFT BOOST · CTRL/F AFT · SPACE/C HEAVE · ←/→ SWAY · X DAMPER · V VIEW · P PAUSE
       </div>
     </div>
   );
@@ -190,7 +200,9 @@ function Stick({ onMove, label }: { onMove: (x: number, y: number) => void; labe
   const base = useRef<HTMLDivElement>(null);
   const [k, setK] = useState({ x: 0, y: 0 });
   const handle = (e: React.PointerEvent) => {
-    const r = base.current!.getBoundingClientRect();
+    const element = base.current;
+    if (!element) return;
+    const r = element.getBoundingClientRect();
     let x = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
     let y = -(e.clientY - (r.top + r.height / 2)) / (r.height / 2);
     const m = Math.hypot(x, y);
@@ -227,7 +239,7 @@ function Stick({ onMove, label }: { onMove: (x: number, y: number) => void; labe
 
 function HoldBtn({ label, onChange }: { label: string; onChange: (on: boolean) => void }) {
   return (
-    <button
+    <Button
       className="h-11 w-14 touch-none rounded border border-hud/50 bg-hud-panel/50 text-xs text-hud active:bg-hud/30"
       onPointerDown={() => onChange(true)}
       onPointerUp={() => onChange(false)}
@@ -235,7 +247,7 @@ function HoldBtn({ label, onChange }: { label: string; onChange: (on: boolean) =
       onPointerCancel={() => onChange(false)}
     >
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -244,17 +256,18 @@ export function TouchControls({ onDamp, onView, onPause }: { onDamp: () => void;
     <div className="fixed inset-x-0 bottom-0 z-20 flex items-end justify-between p-4 font-hud">
       <div className="flex flex-col items-start gap-2">
         <div className="flex gap-2">
+          <HoldBtn label="BOOST" onChange={(on) => (touch.boost = on)} />
           <HoldBtn label="UP" onChange={(on) => (touch.heave = on ? 1 : touch.heave === 1 ? 0 : touch.heave)} />
           <HoldBtn label="DN" onChange={(on) => (touch.heave = on ? -1 : touch.heave === -1 ? 0 : touch.heave)} />
         </div>
         <Stick label="TRANSLATE" onMove={(x, y) => ((touch.tx = x), (touch.ty = y))} />
       </div>
       <div className="flex flex-col gap-2">
-        <button onClick={onDamp} className="rounded border-2 border-hud-danger bg-hud-danger/25 px-3 py-3 text-xs font-bold text-hud-danger">
+        <Button onClick={onDamp} className="rounded border-2 border-hud-danger bg-hud-danger/25 px-3 py-3 text-xs font-bold text-hud-danger">
           DAMPER
-        </button>
-        <button onClick={onView} className="rounded border border-hud/50 bg-hud-panel/50 px-3 py-2 text-xs text-hud">VIEW</button>
-        <button onClick={onPause} className="rounded border border-hud/50 bg-hud-panel/50 px-3 py-2 text-xs text-hud">PAUSE</button>
+        </Button>
+        <Button onClick={onView} className="rounded border border-hud/50 bg-hud-panel/50 px-3 py-2 text-xs text-hud">VIEW</Button>
+        <Button onClick={onPause} className="rounded border border-hud/50 bg-hud-panel/50 px-3 py-2 text-xs text-hud">PAUSE</Button>
       </div>
       <div className="flex flex-col items-end gap-2">
         <div className="flex gap-2">

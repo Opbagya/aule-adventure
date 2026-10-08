@@ -86,7 +86,7 @@ export function HUD() {
       </div>
 
       {/* target marker */}
-      {!sim.docked && (
+      {!sim.docked && !sim.exploring && (
         <div className="absolute" style={{ ...pct(t), transform: "translate(-50%,-50%)" }}>
           <div className={cn("relative h-12 w-12 border-2", t.on ? "border-hud-target" : "border-hud-target/50 rotate-45")}>
             <span className="absolute -right-1 -top-5 translate-x-full whitespace-nowrap text-xs text-hud-target">
@@ -95,6 +95,8 @@ export function HUD() {
           </div>
         </div>
       )}
+      {sim.planetMarkers.filter((p) => p.on).map((p) => <div key={p.id} className="absolute -translate-x-1/2 font-brand text-xs text-foreground/80" style={pct(p)}><div className="mb-2 h-2 w-2 rounded-full border border-foreground/60" />{p.name} · {(p.distance / 1000).toFixed(1)} km</div>)}
+      {sim.exploring && <div className="absolute left-1/2 top-24 -translate-x-1/2 font-brand text-sm text-foreground">{sim.transferActive ? `Transfer ${Math.round(sim.transfer * 100)}%` : `${sim.destination === "mars" ? "Mars" : "Jupiter"} / Free flight`}</div>}
       {/* prograde / retrograde */}
       {sim.progradeScreen.on && (
         <svg className="absolute" style={{ ...pct(sim.progradeScreen), transform: "translate(-50%,-50%)" }} width="40" height="40" viewBox="-20 -20 40 40">
@@ -123,21 +125,21 @@ export function HUD() {
       ))}
 
       {/* top bar */}
-      <div className="absolute left-0 right-0 top-0 flex items-start justify-between p-4 text-xs tracking-[0.2em]">
-        <div>
-          <div className="font-display text-base font-bold tracking-[0.3em] text-hud">AULE SERVICER-1</div>
-          <div className="text-hud/70">{PHASES[sim.phase]}</div>
+      <div className="absolute left-0 right-0 top-0 flex items-start justify-between gap-3 p-4 text-[10px] sm:text-xs sm:tracking-[0.2em]">
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-sm font-bold text-hud sm:text-base sm:tracking-[0.3em]">AULE SERVICER-1</div>
+          <div className="text-hud/70">{sim.exploring ? "PLANETARY EXPLORATION" : PHASES[sim.phase]}</div>
           <div className="text-hud/50">MET {mm}:{ss} · {VIEWS[sim.view]}</div>
         </div>
-        <div className="flex flex-col items-center gap-1">
+        <div className="absolute left-4 right-4 top-28 flex flex-col items-center gap-1 sm:static">
           {sim.warnings.map((w) => (
-            <div key={w} className={cn("border px-4 py-1 font-display text-sm font-bold tracking-[0.3em] animate-pulse", w === "IMPACT WARNING" || w.includes("CRITICAL") || w.includes("CLOSURE") ? "border-hud-danger bg-hud-danger/20 text-hud-danger" : "border-hud-warn bg-hud-warn/15 text-hud-warn")}>
+            <div key={w} className={cn("border px-4 py-1 font-display text-xs font-bold sm:text-sm sm:tracking-[0.3em] animate-pulse", w === "IMPACT WARNING" || w.includes("CRITICAL") || w.includes("CLOSURE") ? "border-hud-danger bg-hud-danger/20 text-hud-danger" : "border-hud-warn bg-hud-warn/15 text-hud-warn")}>
               ⚠ {w}
             </div>
           ))}
-          {sim.flashT > 0 && <div className="mt-1 border border-hud bg-hud/15 px-5 py-1.5 font-display text-base font-bold tracking-[0.3em]">{sim.flash}</div>}
+          {sim.flashT > 0 && <div className="mt-1 border border-hud bg-hud/15 px-3 py-1.5 text-center font-display text-xs font-bold sm:text-base sm:tracking-[0.3em]">{sim.flash}</div>}
         </div>
-        <div className="w-56">
+        <div className="w-32 shrink-0 sm:w-56">
           <Bar label="RCS PROPELLANT" value={fuelPct} tone={fuelPct > 35 ? "ok" : fuelPct > 15 ? "warn" : "danger"} />
           <div className="mb-2 text-right text-[10px] tracking-[0.2em] text-hud/60">ΔV {sim.fuel.toFixed(1)} m/s</div>
           <Bar label="HULL INTEGRITY" value={sim.hull} tone={sim.hull > 60 ? "ok" : sim.hull > 30 ? "warn" : "danger"} />
@@ -145,7 +147,7 @@ export function HUD() {
       </div>
 
       {/* left telemetry */}
-      <div className="absolute left-4 top-1/2 hidden w-56 -translate-y-1/2 border-l border-hud/40 bg-hud-panel/40 px-3 py-2 backdrop-blur-sm sm:block">
+      <div className={cn("absolute left-4 top-1/2 hidden w-56 -translate-y-1/2 border-l border-hud/40 bg-hud-panel/40 px-3 py-2 sm:block", sim.exploring && "sm:hidden")}>
         <div className="mb-1 text-[10px] tracking-[0.3em] text-hud/50">RELATIVE NAV</div>
         <Readout label="RANGE" value={sim.range.toFixed(sim.range < 100 ? 2 : 0)} unit="m" />
         <Readout label="CLOSURE" value={fmt(sim.closure, 2)} unit="m/s" tone={closeTone} />
@@ -155,7 +157,7 @@ export function HUD() {
       </div>
 
       {/* right telemetry */}
-      <div className="absolute right-4 top-1/2 hidden w-56 -translate-y-1/2 border-r border-hud/40 bg-hud-panel/40 px-3 py-2 backdrop-blur-sm sm:block">
+      <div className={cn("absolute right-4 top-1/2 hidden w-56 -translate-y-1/2 border-r border-hud/40 bg-hud-panel/40 px-3 py-2 sm:block", sim.exploring && "sm:hidden")}>
         <div className="mb-1 text-[10px] tracking-[0.3em] text-hud/50">ATTITUDE ERROR / RATE</div>
         <Readout label="ROLL" value={fmt(sim.err.roll)} unit="°" tone={errTone(sim.err.roll)} />
         <Readout label="PITCH" value={fmt(sim.err.pitch)} unit="°" tone={errTone(sim.err.pitch)} />
@@ -166,7 +168,7 @@ export function HUD() {
       </div>
 
       {/* capture checklist */}
-      {capture && !sim.docked && (
+      {capture && !sim.docked && !sim.exploring && (
         <div className="absolute bottom-28 left-1/2 -translate-x-1/2 border border-hud/40 bg-hud-panel/50 px-5 py-2 text-xs tracking-[0.2em] backdrop-blur-sm">
           <div className="mb-1 text-center text-hud/60">CAPTURE CRITERIA</div>
           <div className="flex gap-5">

@@ -67,9 +67,13 @@
   --color-hud-flare: var(--hud-flare);
   --font-hud: "Share Tech Mono", ui-monospace, monospace;
   --font-display: "Rajdhani", "Share Tech Mono", sans-serif;
+  --font-brand: "Manrope", "Helvetica Neue", sans-serif;
+  --color-brand-accent: var(--brand-accent);
 }
 
 :root {
+  --brand-accent: oklch(0.48 0.26 266);
+  --intro-scrim: linear-gradient(90deg, oklch(0.16 0.003 100 / 98%) 0%, oklch(0.16 0.003 100 / 88%) 34%, oklch(0.16 0.003 100 / 12%) 75%);
   --radius: 0.625rem;
   --hud: oklch(0.88 0.16 165);
   --hud-warn: oklch(0.83 0.16 75);
@@ -109,6 +113,11 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+}
+
+.mission-intro { background: var(--intro-scrim); }
+@media (max-width: 640px) {
+  .mission-intro { background: oklch(0.16 0.003 100 / 80%); }
 }
 
 .dark {

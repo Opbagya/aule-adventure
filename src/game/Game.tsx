@@ -4,6 +4,11 @@ import { attachKeyboard } from "./input";
 import { resetSim, sim } from "./sim";
 import { SpaceScene } from "./Scene";
 import { HUD, TouchControls, useTick } from "./HUD";
+import { Briefing } from "./Briefing";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, ArrowRight, Globe2, Pause, Play } from "lucide-react";
+import { travelTo } from "./sim";
+import { DESTINATIONS } from "./destinations";
 
 const CONTROLS: [string, string][] = [
   ["W / S", "Pitch down / up"],
@@ -40,7 +45,7 @@ function Panel({ children }: { children: React.ReactNode }) {
 }
 
 const Btn = ({ children, onClick, primary }: { children: React.ReactNode; onClick: () => void; primary?: boolean }) => (
-  <button
+  <Button
     onClick={onClick}
     className={
       primary
@@ -49,7 +54,7 @@ const Btn = ({ children, onClick, primary }: { children: React.ReactNode; onClic
     }
   >
     {children}
-  </button>
+  </Button>
 );
 
 export function Game() {
@@ -103,41 +108,14 @@ export function Game() {
     <div className="fixed inset-0 bg-background">
       <SpaceScene />
       {(s === "playing" || s === "paused") && <HUD />}
+      {s === "playing" && <div className="fixed bottom-7 left-1/2 z-20 flex w-max max-w-[95vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border border-foreground/15 bg-background/85 p-2 font-brand text-foreground">
+        {sim.exploring && <Button size="sm" variant="ghost" disabled={sim.transferActive} onClick={() => travelTo("mission")}><ArrowLeft /> Mission</Button>}
+        {DESTINATIONS.map((d) => <Button key={d.id} size="sm" variant="ghost" disabled={sim.transferActive || sim.docked} onClick={() => travelTo(d.id)} className={sim.destination === d.id ? "bg-brand-accent/25" : ""}><Globe2 /> {d.name}<ArrowRight /></Button>)}
+        <Button size="icon" variant="ghost" aria-label="Pause mission" onClick={togglePause}><Pause /></Button>
+      </div>}
       {s === "playing" && isTouch && <TouchControls onDamp={toggleDamp} onView={cycleView} onPause={togglePause} />}
 
-      {s === "briefing" && (
-        <Panel>
-          <div className="text-xs tracking-[0.4em] text-hud/70">AULE SPACE · MISSION BRIEFING</div>
-          <h1 className="mt-2 font-display text-4xl font-bold leading-none tracking-[0.12em] text-foreground sm:text-6xl">
-            AULE SPACE: <span className="text-hud">ORBITAL RPOD</span> SIMULATOR
-          </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            LEO, 450 km. <span className="text-foreground">ComSat-9</span> has exhausted its station-keeping propellant and is tumbling at
-            0.5 rpm. Pilot the <span className="text-hud">Aule Servicer-1</span> 1.5 km through a debris field, enter the docking corridor,
-            match its roll, and capture the aft launch-adapter ring at under 0.20 m/s and 3.5° of misalignment.
-          </p>
-          <div className="mt-5 grid grid-cols-3 gap-3 text-xs tracking-[0.15em]">
-            {[["PH-1", "Transit 1500→200 m", "Avoid debris"], ["PH-2", "Approach 200→15 m", "Fly the corridor"], ["PH-3", "Capture < 15 m", "≤0.20 m/s · ≤3.5°"]].map(([a, b, c]) => (
-              <div key={a} className="border border-hud/25 p-3">
-                <div className="font-display text-lg font-bold text-hud">{a}</div>
-                <div className="text-foreground">{b}</div>
-                <div className="text-muted-foreground">{c}</div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6">
-            <Controls />
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">Tip: tap X for the damper — inside 300 m it auto rate-matches the target's tumble. Touch devices get twin joysticks.</p>
-          <div className="mt-6 flex flex-wrap items-center gap-4">
-            <Btn primary onClick={start}>BEGIN MISSION</Btn>
-            <a href="https://aule.space/" target="_blank" rel="noreferrer" className="text-xs tracking-[0.2em] text-hud/70 underline-offset-4 hover:underline">
-              AULE.SPACE ↗
-            </a>
-          </div>
-        </Panel>
-      )}
-
+      {s === "briefing" && <Briefing onStart={start} controls={<Controls />} />}
       {s === "paused" && (
         <Panel>
           <h2 className="font-display text-4xl font-bold tracking-[0.2em] text-hud">PAUSED</h2>
@@ -145,7 +123,7 @@ export function Game() {
             <Controls />
           </div>
           <div className="mt-6 flex gap-4">
-            <Btn primary onClick={togglePause}>RESUME</Btn>
+            <Btn primary onClick={togglePause}><Play size={16} /> RESUME</Btn>
             <Btn onClick={start}>RESTART</Btn>
           </div>
         </Panel>

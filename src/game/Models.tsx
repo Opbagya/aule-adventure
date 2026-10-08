@@ -70,13 +70,13 @@ export function Servicer() {
   const beacon = useMemo(() => hdr(6, 1, 0.4), []);
   const _q = useMemo(() => new THREE.Quaternion(), []);
   const _v = useMemo(() => new THREE.Vector3(), []);
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     if (!g.current) return;
     g.current.position.copy(sim.pos);
     g.current.quaternion.copy(sim.quat);
     _v.copy(SUN_DIR).applyQuaternion(_q.copy(sim.quat).invert());
     const a = Math.atan2(_v.z, _v.y);
-    wings.current.forEach((w) => w && (w.rotation.x += (a - w.rotation.x) * 0.02));
+    wings.current.forEach((w) => { if (w) w.rotation.x += (a - w.rotation.x) * (1 - Math.exp(-1.2 * Math.min(delta, 0.05))); });
     const close = sim.dockT;
     fingers.current.forEach((f) => f && (f.rotation.x = 0.9 * (1 - close) - 0.15 * close));
     const blink = Math.sin(clock.elapsedTime * 6) > 0.7 ? 1 : 0.05;
@@ -86,13 +86,13 @@ export function Servicer() {
   return (
     <group ref={g}>
       {/* hexagonal bus */}
-      <mesh material={mats.gold} rotation={[Math.PI / 2, 0, Math.PI / 6]} castShadow receiveShadow>
+      <mesh material={mats.gold} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[1.15, 1.15, 2.4, 6]} />
       </mesh>
-      <mesh material={mats.dark} position={[0, 0, -1.22]} rotation={[Math.PI / 2, 0, Math.PI / 6]}>
+      <mesh material={mats.dark} position={[0, 0, -1.22]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[1.05, 1.05, 0.06, 6]} />
       </mesh>
-      <mesh material={mats.silver} position={[0, 0, 1.22]} rotation={[Math.PI / 2, 0, Math.PI / 6]}>
+      <mesh material={mats.silver} position={[0, 0, 1.22]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[1.05, 1.05, 0.06, 6]} />
       </mesh>
       {/* docking ring + struts */}
@@ -269,7 +269,7 @@ export function ComSat() {
           <mesh material={mats.dark} position={[s * 1.6, 0, 0]}>
             <boxGeometry args={[0.3, 0.4, 0.4]} />
           </mesh>
-          <group rotation={[-0.45, 0, 0]}>
+          <group>
             {[0, 1, 2, 3].map((i) => (
               <Panel key={i} mats={mats} solar={mats.solarBlue} size={[2.6, 0.06, 2.3]} position={[s * (5.1 + i * 2.72), 0, 0]} rotation={[Math.PI / 2, 0, 0]} />
             ))}
@@ -313,7 +313,7 @@ export function Corridor() {
   useFrame(() => {
     if (!g.current) return;
     g.current.quaternion.copy(sim.targetQuat);
-    g.current.visible = sim.range < 260 && !sim.docked;
+    g.current.visible = sim.range < 260 && !sim.docked && !sim.exploring;
     if (sim.inCorridor) mat.color.setRGB(0.3, 2.2, 1.4);
     else mat.color.setRGB(2.6, 1.2, 0.2);
     mat.opacity = 0.35 + Math.min(1, 40 / Math.max(sim.range, 1)) * 0.3;
@@ -389,6 +389,7 @@ export function DebrisField() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mats, sim.runId]);
   useFrame(() => {
+    root.visible = !sim.exploring;
     root.children.forEach((c, i) => {
       const d = sim.debris[i];
       if (!d) return;

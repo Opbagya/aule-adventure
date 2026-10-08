@@ -4,6 +4,11 @@ import { attachKeyboard } from "./input";
 import { resetSim, sim } from "./sim";
 import { SpaceScene } from "./Scene";
 import { HUD, TouchControls, useTick } from "./HUD";
+import { Briefing } from "./Briefing";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, ArrowRight, Globe2, Pause, Play } from "lucide-react";
+import { travelTo } from "./sim";
+import { DESTINATIONS } from "./destinations";
 
 const CONTROLS: [string, string][] = [
   ["W / S", "Pitch down / up"],
@@ -40,7 +45,7 @@ function Panel({ children }: { children: React.ReactNode }) {
 }
 
 const Btn = ({ children, onClick, primary }: { children: React.ReactNode; onClick: () => void; primary?: boolean }) => (
-  <button
+  <Button
     onClick={onClick}
     className={
       primary
@@ -49,7 +54,7 @@ const Btn = ({ children, onClick, primary }: { children: React.ReactNode; onClic
     }
   >
     {children}
-  </button>
+  </Button>
 );
 
 export function Game() {
@@ -103,9 +108,15 @@ export function Game() {
     <div className="fixed inset-0 bg-background">
       <SpaceScene />
       {(s === "playing" || s === "paused") && <HUD />}
+      {s === "playing" && <div className="fixed bottom-7 left-1/2 z-20 flex max-w-[95vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border border-foreground/15 bg-background/85 p-2 font-brand text-foreground">
+        {sim.exploring && <Button size="sm" variant="ghost" disabled={sim.transferActive} onClick={() => travelTo("mission")}><ArrowLeft /> Mission</Button>}
+        {DESTINATIONS.map((d) => <Button key={d.id} size="sm" variant="ghost" disabled={sim.transferActive || sim.docked} onClick={() => travelTo(d.id)} className={sim.destination === d.id ? "bg-brand-accent/25" : ""}><Globe2 /> {d.name}<ArrowRight /></Button>)}
+        <Button size="icon" variant="ghost" aria-label="Pause mission" onClick={togglePause}><Pause /></Button>
+      </div>}
       {s === "playing" && isTouch && <TouchControls onDamp={toggleDamp} onView={cycleView} onPause={togglePause} />}
 
-      {s === "briefing" && (
+      {s === "briefing" && <Briefing onStart={start} controls={<Controls />} />}
+      {false && (
         <Panel>
           <div className="text-xs tracking-[0.4em] text-hud/70">AULE SPACE · MISSION BRIEFING</div>
           <h1 className="mt-2 font-display text-4xl font-bold leading-none tracking-[0.12em] text-foreground sm:text-6xl">
@@ -145,7 +156,7 @@ export function Game() {
             <Controls />
           </div>
           <div className="mt-6 flex gap-4">
-            <Btn primary onClick={togglePause}>RESUME</Btn>
+            <Btn primary onClick={togglePause}><Play size={16} /> RESUME</Btn>
             <Btn onClick={start}>RESTART</Btn>
           </div>
         </Panel>

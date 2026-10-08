@@ -58,7 +58,7 @@ export function SpeedStreaks() {
     if (ctx) for (const [key, token] of [["core", "--hyperspace-core"], ["tail", "--hyperspace-tail"]] as const) {
       ctx.fillStyle = css.getPropertyValue(token).trim(); ctx.fillRect(0, 0, 1, 1);
       const pixel = ctx.getImageData(0, 0, 1, 1).data;
-      data.uniforms[key].value.setRGB(pixel[0] / 255, pixel[1] / 255, pixel[2] / 255, THREE.SRGBColorSpace);
+      data.uniforms[key].value.setRGB((pixel[0] ?? 0) / 255, (pixel[1] ?? 0) / 255, (pixel[2] ?? 0) / 255, THREE.SRGBColorSpace);
     }
     return () => data.geo.dispose();
   }, [data]);

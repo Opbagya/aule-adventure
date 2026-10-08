@@ -9,6 +9,7 @@ import {
 } from "./sim";
 import { RCS_LOCAL } from "./Models";
 import { getGlow } from "./textures";
+import { DESTINATIONS } from "./destinations";
 
 const Z = new THREE.Vector3(0, 0, 1);
 const D = new THREE.Vector3();
@@ -62,7 +63,7 @@ export function SimLoop() {
     const playing = sim.screen === "playing";
     const paused = sim.screen === "paused";
 
-    if (!paused) {
+    if (playing && !sim.exploring) {
       sim.targetAngle += TUMBLE * dt;
       sim.targetQuat.setFromAxisAngle(Z, sim.targetAngle);
     }
@@ -72,10 +73,10 @@ export function SimLoop() {
     sim.thrustWorld.set(0, 0, 0);
     sim.thrustRot.set(0, 0, 0);
 
-    if (playing && !sim.docked) {
-      sim.time += dt;
+    if (playing && !sim.docked && !sim.transferActive) {
+      if (!sim.exploring) sim.time += dt;
       const ax = readAxes();
-      const fuelOk = sim.fuel > 0;
+      const fuelOk = sim.exploring || sim.fuel > 0;
       // --- rotation (body frame) ---
       const cmd = T1.set(ax.pitch, ax.yaw, ax.roll);
       const rot = T2.copy(cmd).multiplyScalar(fuelOk ? ROT_ACC : 0);
@@ -88,7 +89,7 @@ export function SimLoop() {
         if (cmd.z === 0) rot.z = c(desired.z);
       }
       sim.angVel.addScaledVector(rot, dt);
-      sim.fuel -= rot.length() * dt * ROT_FUEL;
+      if (!sim.exploring) sim.fuel -= rot.length() * dt * ROT_FUEL;
       sim.thrustRot.copy(rot);
       const ang = sim.angVel.length() * dt;
       if (ang > 1e-9) {
@@ -96,11 +97,11 @@ export function SimLoop() {
         sim.quat.multiply(DQ).normalize();
       }
       // --- translation ---
-      const fine = sim.range < 30 ? 0.3 : 1;
+      const fine = sim.exploring ? 12 : sim.range < 30 ? 0.3 : 1;
       const tl = T1.set(ax.sway, ax.heave, -ax.surge);
       if (tl.lengthSq() > 1) tl.normalize();
       tl.multiplyScalar(fuelOk ? TRANS_ACC * fine : 0);
-      sim.fuel -= tl.length() * dt;
+      if (!sim.exploring) sim.fuel -= tl.length() * dt;
       sim.thrustWorld.copy(tl).applyQuaternion(sim.quat);
       sim.vel.addScaledVector(sim.thrustWorld, dt);
       sim.pos.addScaledVector(sim.vel, dt);
@@ -111,6 +112,32 @@ export function SimLoop() {
       wasThrusting = thrusting;
       audio.setHiss(thrusting ? Math.min(1, sim.thrustWorld.length() / TRANS_ACC + sim.thrustRot.length() / ROT_ACC * 0.5) : 0);
       if (thrusting) sim.shake = Math.max(sim.shake, 0.012 + sim.thrustWorld.length() * 0.01);
+    }
+
+    if (playing && sim.transferActive) {
+      sim.transfer = Math.min(1, sim.transfer + dt / 4);
+      const e = sim.transfer * sim.transfer * (3 - 2 * sim.transfer);
+      sim.pos.lerpVectors(sim.transferFrom, sim.transferTo, e);
+      if (sim.transfer >= 1) {
+        sim.transferActive = false;
+        if (!sim.destination) {
+          sim.exploring = false;
+          sim.vel.copy(sim.missionVel);
+          sim.quat.copy(sim.missionQuat);
+          sim.angVel.copy(sim.missionAngVel);
+        }
+      }
+    }
+    if (playing && sim.exploring && !sim.transferActive) {
+      for (const body of DESTINATIONS) {
+        T1.copy(sim.pos).sub(body.center);
+        if (T1.length() < body.radius + 20) {
+          T1.normalize();
+          sim.pos.copy(body.center).addScaledVector(T1, body.radius + 20);
+          const radial = sim.vel.dot(T1);
+          if (radial < 0) sim.vel.addScaledVector(T1, -radial);
+        }
+      }
     }
 
     // --- docked: capture animation ---
@@ -157,7 +184,7 @@ export function SimLoop() {
       lastRun = sim.runId;
       prevPhase = 1;
     }
-    if (playing && !sim.docked) {
+    if (playing && !sim.docked && !sim.exploring) {
       if (sim.phase !== prevPhase) {
         if (sim.phase === 2 && prevPhase === 1) audio.voice("Servicer one, ComSat nine in visual range. Begin terminal approach.");
         if (sim.phase === 3 && prevPhase === 2) audio.voice("Inside fifteen meters. Stand by for capture.");
@@ -204,9 +231,10 @@ export function SimLoop() {
     }
 
     // debris
-    if (!paused) {
+    if (playing && !sim.exploring) {
       for (let i = 0; i < sim.debris.length; i++) {
-        const d = sim.debris[i]!;
+        const d = sim.debris[i];
+        if (!d) continue;
         d.pos.addScaledVector(d.vel, dt);
         if (d.pos.x > 160) d.pos.x = -160;
         if (d.pos.x < -160) d.pos.x = 160;
@@ -246,7 +274,7 @@ export function SimLoop() {
       }
     }
 
-    if (playing && !sim.docked) {
+    if (playing && !sim.docked && !sim.exploring) {
       if (threatsRaw.some((t) => t.tti < 6)) warnings.push("IMPACT WARNING");
       if (sim.range < 50 && sim.closure > 0.3) warnings.push("EXCESSIVE CLOSURE RATE");
       if (sim.range < 200 && !sim.inCorridor) warnings.push("CORRIDOR DEVIATION");
@@ -274,11 +302,10 @@ export function SimLoop() {
     // --- camera ---
     const k = 1 - Math.exp(-6 * dt);
     if (sim.screen === "briefing") {
-      const t = state.clock.elapsedTime * 0.08;
-      cam.position.set(sim.pos.x + Math.sin(t) * 13, sim.pos.y + 3.5 + Math.sin(t * 0.7) * 2, sim.pos.z + Math.cos(t) * 13);
+      cam.position.set(sim.pos.x + 8, sim.pos.y + 3, sim.pos.z + 12);
       cam.up.set(0, 1, 0);
-      cam.lookAt(sim.pos.x - 2, sim.pos.y - 1, sim.pos.z - 4);
-      cam.fov = 45;
+      cam.lookAt(sim.pos.x - 6, sim.pos.y, sim.pos.z - 3);
+      cam.fov = 52;
     } else if (sim.view === 0) {
       cam.position.copy(N).add(T1.set(0, 0.2, -0.1).applyQuaternion(sim.quat));
       cam.quaternion.copy(sim.quat);
@@ -287,7 +314,7 @@ export function SimLoop() {
       const desired = T1.set(0, 3.4, 15).applyQuaternion(sim.quat).add(sim.pos);
       if (cam.position.distanceTo(desired) > 60) cam.position.copy(desired);
       cam.position.lerp(desired, sim.screen === "success" ? 0.02 : k);
-      cam.up.lerp(T2.set(0, 1, 0).applyQuaternion(sim.quat), k).normalize();
+      cam.up.copy(T2.set(0, 1, 0).applyQuaternion(sim.quat));
       cam.lookAt(T3.set(0, 0.6, -14).applyQuaternion(sim.quat).add(sim.pos));
       cam.fov = 55;
     } else {
@@ -306,6 +333,12 @@ export function SimLoop() {
 
     // --- HUD projections ---
     project(cam, D, sim.targetScreen);
+    DESTINATIONS.forEach((body, i) => {
+      const marker = sim.planetMarkers[i];
+      if (!marker) return;
+      project(cam, body.center, marker);
+      marker.distance = Math.max(0, sim.pos.distanceTo(body.center) - body.radius);
+    });
     if (sim.relSpeed > 0.03) {
       T1.copy(sim.vel).normalize();
       project(cam, T2.copy(cam.position).addScaledVector(T1, 500), sim.progradeScreen);
@@ -318,7 +351,8 @@ export function SimLoop() {
     threatsRaw.sort((a, b) => a.dist - b.dist);
     sim.threats = threatsRaw.slice(0, 6).map((t) => {
       const sp = { x: 0, y: 0, on: false, tti: t.tti, dist: t.dist };
-      project(cam, sim.debris[t.i]!.pos, sp);
+      const debris = sim.debris[t.i];
+      if (debris) project(cam, debris.pos, sp);
       return sp;
     });
   }, -2);

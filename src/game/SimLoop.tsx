@@ -374,12 +374,12 @@ export function Thrusters() {
       }
     }
     for (let i = 0; i < MAX; i++) {
-      if (life[i] > 0) {
-        life[i] -= dt;
-        pos[i * 3] += vel[i * 3] * dt;
-        pos[i * 3 + 1] += vel[i * 3 + 1] * dt;
-        pos[i * 3 + 2] += vel[i * 3 + 2] * dt;
-        const l = Math.max(0, life[i]) * 2.4;
+      if (life[i]! > 0) {
+        life[i]! -= dt;
+        pos[i * 3]! += vel[i * 3]! * dt;
+        pos[i * 3 + 1]! += vel[i * 3 + 1]! * dt;
+        pos[i * 3 + 2]! += vel[i * 3 + 2]! * dt;
+        const l = Math.max(0, life[i]!) * 2.4;
         col[i * 3] = 1.6 * l;
         col[i * 3 + 1] = 2.0 * l;
         col[i * 3 + 2] = 2.8 * l;

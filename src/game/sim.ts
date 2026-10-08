@@ -102,9 +102,9 @@ export function resetSim() {
   const kinds = [0, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4];
   const debris: Debris[] = [];
   for (let i = 0; i < 42; i++) {
-    const kind = kinds[Math.floor(Math.random() * kinds.length)];
+    const kind = kinds[Math.floor(Math.random() * kinds.length)]!;
     const scale = kind === 2 ? 1 + Math.random() * 1.2 : 0.7 + Math.random() * 0.8;
-    const baseR = [5, 1.6, 0.7, 1.1, 0.9][kind];
+    const baseR = [5, 1.6, 0.7, 1.1, 0.9][kind]!;
     const pos = new THREE.Vector3(
       (Math.random() - 0.5) * 220,
       (Math.random() - 0.5) * 120,

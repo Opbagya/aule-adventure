@@ -29,7 +29,7 @@ export function getFoil(tint: "gold" | "silver") {
       const x = Math.random() * S;
       const y = Math.random() * S;
       const r = 8 + Math.random() * 38;
-      const pts = [0, 1, 2].map(() => [x + (Math.random() - 0.5) * r * 2, y + (Math.random() - 0.5) * r * 2]);
+      const pts = [0, 1, 2].map(() => [x + (Math.random() - 0.5) * r * 2, y + (Math.random() - 0.5) * r * 2] as [number, number]) as [[number, number], [number, number], [number, number]];
       const l = 30 + Math.random() * 45;
       const bl = Math.floor(Math.random() * 255);
       for (const [ctx, fill] of [
@@ -75,7 +75,7 @@ export function getSolar(variant: "deep" | "blue") {
     for (let i = 0; i < n; i++)
       for (let j = 0; j < n; j++) {
         const grd = g.createLinearGradient(i * cs, j * cs, (i + 1) * cs, (j + 1) * cs);
-        const base = variant === "deep" ? [18, 24, 58] : [22, 52, 120];
+        const base: [number, number, number] = variant === "deep" ? [18, 24, 58] : [22, 52, 120];
         const v = (Math.random() - 0.5) * 14;
         grd.addColorStop(0, `rgb(${base[0] + v},${base[1] + v},${base[2] + v})`);
         grd.addColorStop(1, `rgb(${base[0] * 0.6},${base[1] * 0.6},${base[2] * 0.75})`);

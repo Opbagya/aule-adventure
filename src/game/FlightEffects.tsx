@@ -30,27 +30,60 @@ export function MotionBlur() {
 }
 
 export function SpeedStreaks() {
-  const root = useRef<THREE.LineSegments>(null);
+  const root = useRef<THREE.Mesh>(null);
   const reduced = useRef(false);
   useEffect(() => { const q = window.matchMedia("(prefers-reduced-motion: reduce)"); reduced.current = q.matches; const change = () => { reduced.current = q.matches; }; q.addEventListener("change", change); return () => q.removeEventListener("change", change); }, []);
   const data = useMemo(() => {
-    const positions = new Float32Array(160 * 6);
-    const seeds = Array.from({ length: 160 }, (_, i) => ({ a: i * 2.39996, r: 9 + (i % 19) * 1.4, z: (i % 23) * 4 }));
-    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    return { geo, positions, seeds, time: 0 };
+    const count = 640;
+    const positions = new Float32Array(count * 18);
+    const uv = new Float32Array(count * 12);
+    const seeds = Array.from({ length: count }, (_, i) => ({
+      a: i * 2.399963, r: 13 + (i * 17 % 71), z: i * 43.17 % 240,
+      width: 0.025 + (i % 7) * 0.013, length: 0.65 + (i % 11) * 0.08,
+    }));
+    for (let i = 0; i < count; i++) uv.set([0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1], i * 12);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
+    geo.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+    return { geo, positions, seeds, time: 0, uniforms: {
+      intensity: new THREE.Uniform(0),
+      core: new THREE.Uniform(new THREE.Color()),
+      tail: new THREE.Uniform(new THREE.Color()),
+    } };
   }, []);
+  useEffect(() => {
+    const css = getComputedStyle(document.documentElement);
+    // Resolve semantic CSS colors to sRGB for the WebGL material.
+    const canvas = document.createElement("canvas"); const ctx = canvas.getContext("2d");
+    if (ctx) for (const [key, token] of [["core", "--hyperspace-core"], ["tail", "--hyperspace-tail"]] as const) {
+      ctx.fillStyle = css.getPropertyValue(token).trim(); ctx.fillRect(0, 0, 1, 1);
+      const pixel = ctx.getImageData(0, 0, 1, 1).data;
+      data.uniforms[key].value.setRGB(pixel[0] / 255, pixel[1] / 255, pixel[2] / 255, THREE.SRGBColorSpace);
+    }
+    return () => data.geo.dispose();
+  }, [data]);
   useFrame(({ camera }, raw) => {
-    const line = root.current; if (!line) return;
-    line.visible = !reduced.current && sim.motion > 0.08 && sim.screen === "playing" && sim.landing === "orbit";
-    line.position.copy(camera.position); line.quaternion.copy(camera.quaternion);
-    data.time += Math.min(raw, 0.05) * (sim.boosting || sim.transferActive ? 80 : 18);
+    const mesh = root.current; if (!mesh) return;
+    mesh.visible = !reduced.current && sim.motion > 0.08 && sim.screen === "playing" && sim.landing === "orbit";
+    if (!mesh.visible) return;
+    mesh.position.copy(camera.position); mesh.quaternion.copy(camera.quaternion);
+    data.time += Math.min(raw, 0.05) * (sim.boosting || sim.transferActive ? 180 : 35);
     data.seeds.forEach((s, i) => {
-      const z = -110 + ((s.z + data.time) % 100);
-      const o = i * 6; const x = Math.cos(s.a) * s.r; const y = Math.sin(s.a) * s.r;
-      data.positions.set([x, y, z, x, y, z + sim.motion * 12], o);
+      const z = -250 + ((s.z + data.time) % 240);
+      const x = Math.cos(s.a) * s.r; const y = Math.sin(s.a) * s.r;
+      const w = s.width * (0.4 + sim.motion); const back = z - (6 + sim.motion * 80) * s.length;
+      data.positions.set([x-w,y,back, x+w,y,back, x+w,y,z, x-w,y,back, x+w,y,z, x-w,y,z], i * 18);
     });
     data.geo.getAttribute("position").needsUpdate = true;
-    const m = line.material as THREE.LineBasicMaterial; m.opacity = sim.motion * 0.38;
+    data.uniforms.intensity.value = sim.motion;
   });
-  return <lineSegments ref={root} geometry={data.geo} frustumCulled={false}><lineBasicMaterial color="lightsteelblue" transparent opacity={0} depthWrite={false} /></lineSegments>;
+  return <mesh ref={root} geometry={data.geo} frustumCulled={false}>
+    <shaderMaterial uniforms={data.uniforms} transparent depthWrite={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending}
+      vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
+      fragmentShader={`varying vec2 vUv; uniform float intensity; uniform vec3 core; uniform vec3 tail;
+        void main(){float edge=pow(max(0.0,1.0-abs(vUv.x*2.0-1.0)),1.5);
+        float fade=smoothstep(0.0,0.35,vUv.y)*(1.0-smoothstep(0.94,1.0,vUv.y));
+        vec3 color=mix(tail,core,pow(vUv.y,3.0));
+        gl_FragColor=vec4(color*(1.0+intensity*2.5),edge*fade*intensity*0.8);}`} />
+  </mesh>;
 }

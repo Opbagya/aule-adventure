@@ -12,7 +12,7 @@ import { DESTINATIONS } from "./destinations";
 import { touch } from "./input";
 
 const CONTROLS: [string, string][] = [
-  ["W / S", "Pitch up / down"],
+  ["S / W", "Pitch up / down"],
   ["A / D", "Yaw left / right"],
   ["Q / E", "Roll CCW / CW"],
   ["↑ / R", "Forward translation"],

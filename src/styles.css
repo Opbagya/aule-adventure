@@ -72,6 +72,8 @@
 }
 
 :root {
+  --hyperspace-core: oklch(0.97 0.015 220);
+  --hyperspace-tail: oklch(0.74 0.12 230);
   --brand-accent: oklch(0.48 0.26 266);
   --intro-scrim: linear-gradient(90deg, oklch(0.16 0.003 100 / 98%) 0%, oklch(0.16 0.003 100 / 88%) 34%, oklch(0.16 0.003 100 / 12%) 75%);
   --radius: 0.625rem;

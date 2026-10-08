@@ -37,7 +37,7 @@ export function readAxes() {
     ),
     sway: clamp(k("ArrowRight") - k("ArrowLeft") + touch.tx),
     heave: clamp(k("Space") - k("KeyC") + touch.heave),
-    pitch: clamp(k("KeyW") - k("KeyS") + touch.ry),
+    pitch: clamp(k("KeyS") - k("KeyW") + touch.ry),
     yaw: clamp(k("KeyA") - k("KeyD") - touch.rx),
     roll: clamp(k("KeyQ") - k("KeyE") + touch.roll),
     boost: keys.has("ShiftLeft") || keys.has("ShiftRight") || touch.boost,

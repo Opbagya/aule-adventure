@@ -1,4 +1,5 @@
 # Simulator improvements
+- [x] Remove flight details, make propulsion unlimited, reverse W/S pitch, and enhance cinematic hyperspace; verify controls and clean flight view.
 - [x] Level initial spacecraft and chase camera.
 - [x] Visible, reachable planetary destinations.
 - [x] Contemporary Aule-inspired mission introduction.

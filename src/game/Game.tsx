@@ -108,7 +108,7 @@ export function Game() {
     <div className="fixed inset-0 bg-background">
       <SpaceScene />
       {(s === "playing" || s === "paused") && <HUD />}
-      {s === "playing" && <div className="fixed bottom-7 left-1/2 z-20 flex max-w-[95vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border border-foreground/15 bg-background/85 p-2 font-brand text-foreground">
+      {s === "playing" && <div className="fixed bottom-7 left-1/2 z-20 flex w-max max-w-[95vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border border-foreground/15 bg-background/85 p-2 font-brand text-foreground">
         {sim.exploring && <Button size="sm" variant="ghost" disabled={sim.transferActive} onClick={() => travelTo("mission")}><ArrowLeft /> Mission</Button>}
         {DESTINATIONS.map((d) => <Button key={d.id} size="sm" variant="ghost" disabled={sim.transferActive || sim.docked} onClick={() => travelTo(d.id)} className={sim.destination === d.id ? "bg-brand-accent/25" : ""}><Globe2 /> {d.name}<ArrowRight /></Button>)}
         <Button size="icon" variant="ghost" aria-label="Pause mission" onClick={togglePause}><Pause /></Button>

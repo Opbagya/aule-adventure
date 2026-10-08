@@ -14,4 +14,5 @@
 - Landing uses a planet-relative tangent frame with shared terrain height calculations and a fixed side camera; keeps feet contact, terrain and descent controls consistent.
 - Assisted flight is a switchable velocity controller; Newtonian flight remains available for unassisted docking.
 - Motion effects are speed-dependent peripheral blur and pooled star streaks, disabled on landing; keeps the vehicle readable.
+- Flight HUD omits telemetry and labels while retaining separate interactive controls; keeps flight scenery unobstructed.
 - Licensed CC0 asteroid meshes are served through a project asset pointer; engineered debris retains custom detailed geometry and generated wear maps.

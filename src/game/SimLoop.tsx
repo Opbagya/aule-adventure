@@ -78,7 +78,9 @@ export function SimLoop() {
     if (playing && !sim.docked && !sim.transferActive && sim.landing === "orbit") {
       if (!sim.exploring) sim.time += dt;
       const ax = readAxes();
-      const fuelOk = sim.exploring || sim.fuel > 0;
+      // Propulsion is unlimited; proximity interlocks still protect docking/landing.
+      sim.fuel = FUEL_MAX;
+      const fuelOk = true;
       // --- rotation (body frame) ---
       const cmd = T1.set(ax.pitch, ax.yaw, ax.roll);
       const rot = T2.copy(cmd).multiplyScalar(fuelOk ? ROT_ACC : 0);
@@ -91,7 +93,6 @@ export function SimLoop() {
         if (cmd.z === 0) rot.z = c(desired.z);
       }
       sim.angVel.addScaledVector(rot, dt);
-      if (!sim.exploring) sim.fuel -= rot.length() * dt * ROT_FUEL;
       sim.thrustRot.copy(rot);
       const ang = sim.angVel.length() * dt;
       if (ang > 1e-9) {
@@ -106,7 +107,6 @@ export function SimLoop() {
       const tl = T1.set(ax.sway, ax.heave, -ax.surge);
       if (tl.lengthSq() > 1) tl.normalize();
       tl.multiplyScalar(fuelOk ? TRANS_ACC * fine : 0);
-      if (!sim.exploring) sim.fuel -= tl.length() * dt;
       sim.thrustWorld.copy(tl).applyQuaternion(sim.quat);
       sim.vel.addScaledVector(sim.thrustWorld, dt);
       if (sim.boosting) {
@@ -120,7 +120,7 @@ export function SimLoop() {
       }
       sim.pos.addScaledVector(sim.vel, dt);
       if (sim.boosting) sim.thrustWorld.add(T2.set(0, 0, -8).applyQuaternion(sim.quat));
-      sim.fuel = Math.max(0, sim.fuel);
+      sim.fuel = FUEL_MAX;
 
       const thrusting = sim.thrustWorld.lengthSq() > 1e-4 || sim.thrustRot.lengthSq() > 0.004;
       if (thrusting && !wasThrusting) audio.thud();

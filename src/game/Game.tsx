@@ -89,6 +89,7 @@ export function Game() {
 
   useEffect(() => {
     setTouch(window.matchMedia("(pointer: coarse)").matches);
+    if (import.meta.env.DEV) (window as unknown as { __sim: typeof sim }).__sim = sim;
     return attachKeyboard((code) => {
       if (code === "KeyP" || code === "Escape") togglePause();
       if (sim.screen !== "playing") return;

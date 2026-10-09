@@ -81,6 +81,8 @@
   --planet-uranus: oklch(0.8 0.09 190);
   --planet-neptune: oklch(0.55 0.16 260);
   --planet-shadow: inset -16px -7px 20px oklch(0.06 0.01 250 / 85%), inset 6px 3px 12px oklch(1 0 0 / 15%);
+  --warp-rays: repeating-conic-gradient(from 0deg, transparent 0deg 3deg, oklch(0.82 0.12 230 / 60%) 3.1deg 3.3deg, transparent 3.6deg 7deg);
+  --warp-mask: radial-gradient(ellipse at center, transparent 12%, oklch(0 0 0 / 15%) 28%, oklch(0 0 0) 72%);
   --hyperspace-core: oklch(0.97 0.015 220);
   --hyperspace-tail: oklch(0.74 0.12 230);
   --brand-accent: oklch(0.48 0.26 266);
@@ -127,6 +129,11 @@
 }
 
 .mission-intro { background: var(--intro-scrim); }
+.warp-light { position: absolute; inset: 8vh 0; overflow: hidden; opacity: 0.7; animation: warp-arrival 5s ease-in-out both; }
+.warp-light::before { content: ''; position: absolute; inset: -50%; background: var(--warp-rays); mask-image: var(--warp-mask); animation: warp-rush 0.65s linear infinite; }
+@keyframes warp-rush { from { transform: scale(0.85) rotate(0deg); } to { transform: scale(1.25) rotate(3deg); } }
+@keyframes warp-arrival { 0%,100% { opacity: 0; } 22%,75% { opacity: 0.75; } }
+@media (prefers-reduced-motion: reduce) { .warp-light { display: none; } }
 .planet-disc { display: block; width: 64px; height: 64px; border-radius: 50%; box-shadow: var(--planet-shadow); background-size: cover; background-position: center; flex-shrink: 0; }
 .planet-mercury { background-color: var(--planet-mercury); background-image: url('./assets/mars-regolith.jpg'); background-blend-mode: luminosity; }
 .planet-venus { background-color: var(--planet-venus); background-image: url('./assets/jupiter-surface.jpg'); background-blend-mode: luminosity; }

@@ -122,7 +122,7 @@ export function Game() {
         <Button size="icon" variant="ghost" title="Pause mission" aria-label="Pause mission" onClick={togglePause} className="bg-background/60"><Pause /></Button>
       </div>}
       {s === "playing" && destinationsOpen && <DestinationMenu onClose={() => setDestinationsOpen(false)} />}
-      {s === "playing" && sim.transferActive && <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-10"><div className="absolute inset-x-0 top-0 h-[8vh] bg-background" /><div className="absolute inset-x-0 bottom-0 h-[8vh] bg-background" /></div>}
+      {s === "playing" && sim.transferActive && <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-10"><div className="warp-light" /><div className="absolute inset-x-0 top-0 h-[8vh] bg-background" /><div className="absolute inset-x-0 bottom-0 h-[8vh] bg-background" /></div>}
       {s === "playing" && isTouch && <TouchControls onDamp={toggleDamp} onView={cycleView} onPause={togglePause} />}
 
       {s === "briefing" && <Briefing onStart={start} controls={<Controls />} />}

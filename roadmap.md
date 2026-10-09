@@ -1,4 +1,8 @@
 # Simulator improvements
+- [ ] Inviting Aule discovery link and startup description.
+- [ ] Manual-only landing and reusable, distinct planetary surfaces.
+- [ ] All eight destinations, cinematic warp and sound, no bottom options bar.
+- [ ] Verify repeated travel, landing controls, and unlimited boost.
 - [x] Remove flight details, make propulsion unlimited, reverse W/S pitch, and enhance cinematic hyperspace; verify controls and clean flight view.
 - [x] Level initial spacecraft and chase camera.
 - [x] Visible, reachable planetary destinations.

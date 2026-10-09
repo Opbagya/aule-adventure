@@ -5,7 +5,7 @@ import { audio } from "./audio";
 import { readAxes } from "./input";
 import {
   DOCK_Z, FUEL_MAX, NOSE, ROT_ACC, ROT_FUEL, SUN_DIR, TRANS_ACC, TUMBLE,
-  beginLanding, computeScore, sim, type ScreenPt,
+  advanceTransfer, beginLanding, computeScore, sim, type ScreenPt,
 } from "./sim";
 import { RCS_LOCAL } from "./Models";
 import { getGlow } from "./textures";
@@ -130,30 +130,14 @@ export function SimLoop() {
     }
 
     if (playing && sim.transferActive) {
-      sim.transfer = Math.min(1, sim.transfer + dt / 4);
-      const e = sim.transfer * sim.transfer * (3 - 2 * sim.transfer);
-      sim.pos.lerpVectors(sim.transferFrom, sim.transferTo, e);
-      if (sim.transfer >= 1) {
-        sim.transferActive = false;
-        const body = DESTINATIONS.find((d) => d.id === sim.destination);
-        if (body) {
-          T1.copy(body.center).sub(sim.pos).normalize();
-          sim.quat.setFromUnitVectors(new THREE.Vector3(0, 0, -1), T1);
-        }
-        if (!sim.destination) {
-          sim.exploring = false;
-          sim.vel.copy(sim.missionVel);
-          sim.quat.copy(sim.missionQuat);
-          sim.angVel.copy(sim.missionAngVel);
-        }
-      }
+      if (advanceTransfer(dt)) audio.warpExit();
     }
     if (playing && sim.exploring && !sim.transferActive && sim.landing === "orbit") {
       for (const body of DESTINATIONS) {
         T1.copy(sim.pos).sub(body.center);
-        if (body.id === "mars" && T1.length() < body.radius + 165) {
+        if (body.id === sim.destination && T1.length() < body.radius + 165) {
           beginLanding(T1.normalize(), body.center, body.radius);
-          audio.voice("Surface acquired. Landing gear deployed. Automatic descent engaged.");
+          audio.beep(900, 0.15, 0.08);
           break;
         }
         if (T1.length() < body.radius + 80) {
@@ -168,30 +152,24 @@ export function SimLoop() {
       const alt = Math.max(0, sim.surfacePos.y - ground - FOOT_HEIGHT);
       const ax = readAxes();
       if (sim.landing !== "landed") {
-        if (sim.landing === "automatic") {
-          const descent = -Math.min(20, Math.max(0.3, alt * 0.4));
-          T1.set(-sim.surfacePos.x * 0.4, descent, -sim.surfacePos.z * 0.4);
-          T1.x = THREE.MathUtils.clamp(T1.x, -5, 5); T1.z = THREE.MathUtils.clamp(T1.z, -5, 5);
-          sim.surfaceVel.lerp(T1, 1 - Math.exp(-3 * dt));
-        } else {
-          // Screen-relative translation in the fixed side camera; rotation is held level.
-          T1.set(ax.surge * 3, ax.heave * 3, -ax.sway * 3);
-          sim.surfaceVel.lerp(T1, 1 - Math.exp(-4 * dt));
-          if (ax.heave === 0) sim.surfaceVel.y -= 0.6 * dt;
-        }
+        // Manual side-camera translation: arrows move across/deeper, Space/C rise/descend.
+        T1.set(ax.surge * 6, 0, -ax.sway * 6);
+        sim.surfaceVel.x += (T1.x - sim.surfaceVel.x) * (1 - Math.exp(-4 * dt));
+        sim.surfaceVel.z += (T1.z - sim.surfaceVel.z) * (1 - Math.exp(-4 * dt));
+        sim.surfaceVel.y = THREE.MathUtils.clamp(sim.surfaceVel.y + (ax.heave * 5 - 0.65) * dt, -12, 8);
         sim.surfacePos.addScaledVector(sim.surfaceVel, dt);
         const floor = surfaceHeight(sim.surfacePos.x, sim.surfacePos.z) + FOOT_HEIGHT;
         if (sim.surfacePos.y <= floor) {
           const speed = sim.surfaceVel.length(); sim.landingSpeed = speed;
           if (speed > 2) {
             sim.surfacePos.y = floor + 1; sim.surfaceVel.y = 1.5;
-            sim.hull = Math.max(0, sim.hull - 12); sim.landing = "automatic";
-            sim.flash = "HARD CONTACT — DESCENT RECOVERY"; sim.flashT = 3; audio.impact();
+            sim.hull = Math.max(0, sim.hull - 12);
+            sim.flash = "HARD CONTACT"; sim.flashT = 3; audio.impact();
             if (sim.hull <= 0) fail("Landing impact exceeded structural limits.");
           } else {
             sim.surfacePos.y = floor; sim.surfaceVel.set(0, 0, 0); sim.landing = "landed";
             sim.landingQuality = speed < 0.6 ? "Precision touchdown" : "Touchdown confirmed";
-            audio.clamp(); audio.voice("Touchdown confirmed. Welcome to Mars.");
+            audio.clamp();
           }
         }
         if (sim.surfacePos.y > 190) {

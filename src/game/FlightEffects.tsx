@@ -39,7 +39,7 @@ export function SpeedStreaks() {
     const uv = new Float32Array(count * 12);
     const seeds = Array.from({ length: count }, (_, i) => ({
       a: i * 2.399963, r: 13 + (i * 17 % 71), z: i * 43.17 % 240,
-      width: 0.025 + (i % 7) * 0.013, length: 0.65 + (i % 11) * 0.08,
+      width: 0.055 + (i % 7) * 0.02, length: 0.65 + (i % 11) * 0.08,
     }));
     for (let i = 0; i < count; i++) uv.set([0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1], i * 12);
     const geo = new THREE.BufferGeometry();
@@ -71,7 +71,7 @@ export function SpeedStreaks() {
     data.seeds.forEach((s, i) => {
       const z = -250 + ((s.z + data.time) % 240);
       const x = Math.cos(s.a) * s.r; const y = Math.sin(s.a) * s.r;
-      const w = s.width * (0.4 + sim.motion); const back = z - (6 + sim.motion * 80) * s.length;
+      const w = s.width * (0.4 + sim.motion); const back = z - (6 + sim.motion * 140) * s.length;
       data.positions.set([x-w,y,back, x+w,y,back, x+w,y,z, x-w,y,back, x+w,y,z, x-w,y,z], i * 18);
     });
     data.geo.getAttribute("position").needsUpdate = true;
@@ -85,5 +85,31 @@ export function SpeedStreaks() {
         float fade=smoothstep(0.0,0.35,vUv.y)*(1.0-smoothstep(0.94,1.0,vUv.y));
         vec3 color=mix(tail,core,pow(vUv.y,3.0));
         gl_FragColor=vec4(color*(1.0+intensity*2.5),edge*fade*intensity*0.8);}`} />
+  </mesh>;
+}
+
+/** A camera-local, single-draw-call warp tunnel; no downloaded media or per-frame allocations. */
+export function WarpTunnel() {
+  const root = useRef<THREE.Mesh>(null);
+  const uniforms = useMemo(() => ({ time: new THREE.Uniform(0), strength: new THREE.Uniform(0), color: new THREE.Uniform(new THREE.Color()) }), []);
+  const reduced = useRef(false);
+  useEffect(() => {
+    reduced.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const canvas = document.createElement("canvas"); const c = canvas.getContext("2d");
+    if (c) { c.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--hyperspace-tail").trim(); c.fillRect(0, 0, 1, 1); const p = c.getImageData(0, 0, 1, 1).data; uniforms.color.value.setRGB((p[0] ?? 0)/255, (p[1] ?? 0)/255, (p[2] ?? 0)/255, THREE.SRGBColorSpace); }
+  }, [uniforms]);
+  useFrame(({ camera }, raw) => {
+    const m = root.current; if (!m) return;
+    m.visible = !reduced.current && sim.transferActive && sim.screen === "playing";
+    m.position.copy(camera.position).add(new THREE.Vector3(0, 0, -3).applyQuaternion(camera.quaternion)); m.quaternion.copy(camera.quaternion);
+    uniforms.time.value += Math.min(raw, 0.05);
+    uniforms.strength.value = Math.sin(Math.PI * sim.transfer) ** 0.7;
+  });
+  return <mesh ref={root} frustumCulled={false} position-z={-80}>
+    <planeGeometry args={[12, 12]} />
+    <shaderMaterial transparent depthWrite={false} depthTest={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} uniforms={uniforms}
+      vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
+      fragmentShader={`varying vec2 vUv; uniform float time; uniform float strength; uniform vec3 color;
+        void main(){vec2 p=(vUv-0.5)*2.0;float r=length(p);float a=atan(p.y,p.x);float band=sin(a*76.0+sin(r*22.0-time*2.0)*0.8);float line=pow(max(0.0,band),14.0);float flow=0.4+0.6*pow(0.5+0.5*sin(r*100.0-time*35.0),2.0);float edge=smoothstep(0.045,0.25,r);gl_FragColor=vec4(color*(line*4.0+0.2),strength*edge*(line*flow*0.75+0.055));}`}/>
   </mesh>;
 }

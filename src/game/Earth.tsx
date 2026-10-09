@@ -2,7 +2,7 @@ import { useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { SUN_DIR } from "./sim";
+import { SUN_DIR, sim } from "./sim";
 import { getGlow } from "./textures";
 
 export const EARTH_R = 20000;
@@ -75,6 +75,7 @@ export function Earth() {
     "/textures/earth_specular_2048.jpg",
   ]) as THREE.Texture[] as [THREE.Texture, THREE.Texture, THREE.Texture, THREE.Texture];
   const mesh = useRef<THREE.Mesh>(null);
+  const root = useRef<THREE.Group>(null);
   const mat = useMemo(() => {
     day.colorSpace = THREE.SRGBColorSpace;
     night.colorSpace = THREE.SRGBColorSpace;
@@ -112,11 +113,13 @@ export function Earth() {
     [],
   );
   useFrame((_, dt) => {
+    if (root.current) root.current.visible = !sim.exploring && !sim.transferActive;
     if (mesh.current) mesh.current.rotation.y += dt * 0.004;
-    mat.uniforms['uCloudOff']!.value += dt * 0.00025;
+    const offset = mat.uniforms['uCloudOff'];
+    if (offset) offset.value += Math.min(dt, 0.05) * 0.00025;
   });
   return (
-    <group position={EARTH_C} rotation={[0.35, 0, 0.2]}>
+    <group ref={root} position={EARTH_C} rotation={[0.35, 0, 0.2]}>
       <mesh ref={mesh} material={mat} rotation={[0, 2.2, 0]}>
         <sphereGeometry args={[EARTH_R, 160, 120]} />
       </mesh>

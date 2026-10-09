@@ -4,7 +4,8 @@ let hiss: GainNode;
 let noiseBuf: AudioBuffer;
 
 function noiseSrc() {
-  const s = ctx!.createBufferSource();
+  if (!ctx) throw new Error("Audio not initialized");
+  const s = ctx.createBufferSource();
   s.buffer = noiseBuf;
   return s;
 }
@@ -125,12 +126,13 @@ export const audio = {
   },
   chime() {
     if (!ctx) return;
+    const context = ctx;
     this.squelch();
     const t = ctx.currentTime + 0.3;
     [988, 1319, 1976].forEach((fr, i) => {
-      const o = ctx!.createOscillator();
+      const o = context.createOscillator();
       o.frequency.value = fr;
-      const g = ctx!.createGain();
+      const g = context.createGain();
       env(g, t + i * 0.12, 0.12, 0.01, 0.4);
       o.connect(g).connect(master);
       o.start(t + i * 0.12);
@@ -166,6 +168,7 @@ export const audio = {
   },
   clamp() {
     if (!ctx) return;
+    const context = ctx;
     const t0 = ctx.currentTime;
     // servo whine
     const s = ctx.createOscillator();
@@ -185,24 +188,43 @@ export const audio = {
       const t = t0 + dt;
       for (const fr of [180, 830, 2450]) {
         const n = noiseSrc();
-        const f = ctx!.createBiquadFilter();
+        const f = context.createBiquadFilter();
         f.type = "bandpass";
         f.frequency.value = fr * (1 + i * 0.07);
         f.Q.value = 18;
-        const g = ctx!.createGain();
+        const g = context.createGain();
         env(g, t, 1.2, 0.002, 0.5);
         n.connect(f).connect(g).connect(master);
         n.start(t);
         n.stop(t + 0.6);
       }
-      const o = ctx!.createOscillator();
+      const o = context.createOscillator();
       o.frequency.setValueAtTime(55, t);
       o.frequency.exponentialRampToValueAtTime(30, t + 0.4);
-      const og = ctx!.createGain();
+      const og = context.createGain();
       env(og, t, 0.7, 0.003, 0.4);
       o.connect(og).connect(master);
       o.start(t);
       o.stop(t + 0.5);
     });
   },
+  warp() {
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const n = noiseSrc();
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 0.7;
+    f.frequency.setValueAtTime(120, t);
+    f.frequency.exponentialRampToValueAtTime(6000, t + 1.1);
+    f.frequency.exponentialRampToValueAtTime(700, t + 4.6);
+    const g = ctx.createGain(); env(g, t, 0.55, 1.1, 3.7);
+    n.loop = true; n.connect(f).connect(g).connect(master); n.start(t); n.stop(t + 5);
+    for (const hz of [38, 57, 85]) {
+      const o = ctx.createOscillator(); o.type = "sine";
+      o.frequency.setValueAtTime(hz, t); o.frequency.exponentialRampToValueAtTime(hz * 5, t + 1.1);
+      o.frequency.exponentialRampToValueAtTime(hz * 0.8, t + 4.8);
+      const gain = ctx.createGain(); env(gain, t, 0.16, 0.9, 3.9);
+      o.connect(gain).connect(master); o.start(t); o.stop(t + 5);
+    }
+  },
+  warpExit() { this.thud(); this.squelch(); },
 };

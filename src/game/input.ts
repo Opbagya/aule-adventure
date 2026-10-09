@@ -5,7 +5,7 @@ export const touch = { tx: 0, ty: 0, rx: 0, ry: 0, roll: 0, heave: 0, boost: fal
 const GAME_KEYS = new Set([
   "Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "ShiftLeft", "ShiftRight",
   "ControlLeft", "ControlRight", "KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "KeyC",
-  "KeyR", "KeyF", "KeyX", "KeyV", "KeyL",
+  "KeyR", "KeyF", "KeyX", "KeyV", "KeyL", "KeyB",
 ]);
 
 export function attachKeyboard(onPress: (code: string) => void) {

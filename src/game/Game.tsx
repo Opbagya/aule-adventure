@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 import { audio } from "./audio";
 import { attachKeyboard } from "./input";
-import { approachSurface, liftOff, resetSim, sim, toggleLanding } from "./sim";
+import { liftOff, resetSim, sim } from "./sim";
 import { SpaceScene } from "./Scene";
 import { HUD, TouchControls, useTick } from "./HUD";
 import { Briefing } from "./Briefing";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Globe2, Pause, Play, Rocket, Gauge, Navigation, ArrowDownToLine } from "lucide-react";
-import { travelTo } from "./sim";
-import { DESTINATIONS } from "./destinations";
-import { touch } from "./input";
+import { Globe2, Pause, Play, Rocket } from "lucide-react";
+import { DestinationMenu } from "./DestinationMenu";
 
 const CONTROLS: [string, string][] = [
   ["S / W", "Pitch up / down"],
@@ -17,7 +15,8 @@ const CONTROLS: [string, string][] = [
   ["Q / E", "Roll CCW / CW"],
   ["↑ / R", "Forward translation"],
   ["Shift", "Hyperdrive (hold)"],
-  ["L", "Automatic / manual landing"],
+  ["L", "Lift off after touchdown"],
+  ["B", "Solar system destinations"],
   ["Landing", "Space/C rise/descend · arrows translate"],
   ["Ctrl (or F, ↓)", "Retrograde translation"],
   ["Space / C", "Heave up / down"],
@@ -68,6 +67,7 @@ export function Game() {
     return 0;
   });
   const [isTouch, setTouch] = useState(false);
+  const [destinationsOpen, setDestinationsOpen] = useState(false);
 
   const togglePause = () => {
     if (sim.screen === "playing") {
@@ -106,7 +106,8 @@ export function Game() {
       if (sim.screen !== "playing") return;
       if (code === "KeyV") cycleView();
       if (code === "KeyX") toggleDamp();
-      if (code === "KeyL") toggleLanding();
+      if (code === "KeyL") liftOff();
+      if (code === "KeyB" && !sim.transferActive) setDestinationsOpen((open) => !open);
     });
   }, []);
 
@@ -115,18 +116,13 @@ export function Game() {
     <div className="fixed inset-0 bg-background">
       <SpaceScene />
       {(s === "playing" || s === "paused") && <HUD />}
-      {s === "playing" && <div className="fixed bottom-7 left-1/2 z-20 flex w-max max-w-[95vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border border-foreground/15 bg-background/85 p-2 font-brand text-foreground">
-        {sim.exploring && <Button size="sm" variant="ghost" disabled={sim.transferActive} onClick={() => travelTo("mission")}><ArrowLeft /> Mission</Button>}
-        {sim.landing === "orbit" && <>
-        <Button size="sm" variant="ghost" title="Toggle assisted flight" onClick={() => { sim.cruise = !sim.cruise; sim.damp = sim.cruise; }}><Gauge />{sim.cruise ? "Assisted" : "Newtonian"}</Button>
-        <Button size="sm" variant="ghost" disabled={sim.transferActive} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); touch.boost = true; }} onPointerUp={() => { touch.boost = false; }} onPointerCancel={() => { touch.boost = false; }} onLostPointerCapture={() => { touch.boost = false; }}><Rocket />Boost</Button>
-        </>}
-        {sim.destination === "mars" && sim.landing === "orbit" && <Button size="sm" variant="ghost" disabled={sim.transferActive} onClick={approachSurface}><ArrowDownToLine />Approach surface</Button>}
-        {sim.landing !== "orbit" && sim.landing !== "landed" && <Button size="sm" variant="ghost" onClick={toggleLanding}><Navigation />{sim.landing === "automatic" ? "Manual landing" : "Auto land"}</Button>}
-        {sim.landing === "landed" && <Button size="sm" variant="ghost" onClick={liftOff}><Rocket />Lift off</Button>}
-        {DESTINATIONS.map((d) => <Button key={d.id} size="sm" variant="ghost" disabled={sim.transferActive || sim.docked} onClick={() => travelTo(d.id)} className={sim.destination === d.id ? "bg-brand-accent/25" : ""}><Globe2 /> {d.name}<ArrowRight /></Button>)}
-        <Button size="icon" variant="ghost" aria-label="Pause mission" onClick={togglePause}><Pause /></Button>
+      {s === "playing" && !sim.transferActive && <div className="fixed right-5 top-5 z-20 flex gap-2 font-brand text-foreground">
+        {sim.landing === "landed" && <Button size="icon" variant="ghost" title="Lift off" aria-label="Lift off" onClick={liftOff}><Rocket /></Button>}
+        <Button size="icon" variant="ghost" title="Solar system destinations" aria-label="Solar system destinations" onClick={() => setDestinationsOpen(true)} className="bg-background/60"><Globe2 /></Button>
+        <Button size="icon" variant="ghost" title="Pause mission" aria-label="Pause mission" onClick={togglePause} className="bg-background/60"><Pause /></Button>
       </div>}
+      {s === "playing" && destinationsOpen && <DestinationMenu onClose={() => setDestinationsOpen(false)} />}
+      {s === "playing" && sim.transferActive && <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-10"><div className="absolute inset-x-0 top-0 h-[8vh] bg-background" /><div className="absolute inset-x-0 bottom-0 h-[8vh] bg-background" /></div>}
       {s === "playing" && isTouch && <TouchControls onDamp={toggleDamp} onView={cycleView} onPause={togglePause} />}
 
       {s === "briefing" && <Briefing onStart={start} controls={<Controls />} />}

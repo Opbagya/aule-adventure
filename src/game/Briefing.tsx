@@ -1,4 +1,4 @@
-import { ArrowRight, ExternalLink, Gamepad2, X } from "lucide-react";
+import { ArrowRight, Gamepad2, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -11,7 +11,7 @@ export function Briefing({ onStart, controls }: { onStart: () => void; controls:
         <a href="https://aule.space/" target="_blank" rel="noreferrer" className="group max-w-[55%] border-b border-foreground/25 pb-3 text-right sm:max-w-sm">
           <span className="block text-xs text-foreground/60 sm:text-sm">What if satellites could live longer?</span>
           <span className="mt-2 flex items-center justify-end gap-3 text-sm font-semibold sm:text-lg">Discover Aule Space <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" /></span>
-          <span className="mt-2 hidden text-xs text-foreground/65 sm:block">A startup building autonomous satellite servicing.</span>
+          <span className="mt-2 block text-xs text-foreground/65">A startup building autonomous satellite servicing.</span>
         </a>
       </header>
       <main className="mx-6 mt-14 max-w-xl pb-10 md:mx-12 md:mt-20">

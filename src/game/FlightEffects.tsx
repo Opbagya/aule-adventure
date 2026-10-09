@@ -107,9 +107,9 @@ export function WarpTunnel() {
   });
   return <mesh ref={root} frustumCulled={false} position-z={-80}>
     <cylinderGeometry args={[32, 32, 280, 48, 1, true]} />
-    <shaderMaterial transparent depthWrite={false} side={THREE.BackSide} blending={THREE.AdditiveBlending} uniforms={uniforms}
+    <shaderMaterial transparent depthWrite={false} depthTest={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} uniforms={uniforms}
       vertexShader={`varying vec2 vUv; void main(){vUv=uv; vec3 p=position; p=vec3(p.x,p.z,-p.y-125.0); gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);}`}
       fragmentShader={`varying vec2 vUv; uniform float time; uniform float strength; uniform vec3 color;
-        void main(){float band=sin(vUv.x*180.0+sin(vUv.y*24.0-time*3.0)*1.8); float line=pow(max(0.0,band),18.0); float wave=0.5+0.5*sin(vUv.y*80.0-time*25.0); float fade=smoothstep(0.0,0.2,vUv.y)*(1.0-smoothstep(0.9,1.0,vUv.y)); gl_FragColor=vec4(color*(line*3.0+wave*0.25),strength*fade*(line*0.65+0.06));}`}/>
+        void main(){float band=sin(vUv.x*180.0+sin(vUv.y*24.0-time*3.0)*1.8); float line=pow(max(0.0,band),8.0); float wave=0.5+0.5*sin(vUv.y*80.0-time*25.0); float fade=smoothstep(0.0,0.2,vUv.y)*(1.0-smoothstep(0.9,1.0,vUv.y)); gl_FragColor=vec4(color*(line*5.0+wave*0.7),strength*fade*(line*0.85+0.18));}`}/>
   </mesh>;
 }

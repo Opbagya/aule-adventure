@@ -1,4 +1,8 @@
 # Simulator improvements
+- [ ] Improve landing surface and presentation; landing Up/Down arrows rise/descend rather than moving in depth.
+- [ ] Give the opening screen a more realistic cinematic look and add restrained hyperdrive motion blur.
+- [ ] Smooth destination warp animation without clipping or looping cuts, and verify repeated travel.
+- [ ] Replace opening robotic narration with original cinematic space background music; verify playback and pause.
 - [x] Inviting Aule discovery link and startup description.
 - [x] Manual-only landing and reusable, distinct planetary surfaces; fictional cloud decks on gas giants.
 - [x] All eight destinations, cinematic warp and sound, no bottom options bar.

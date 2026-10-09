@@ -12,8 +12,10 @@
 - All planetary trips and mission returns use the same tested transfer step with exact arrival snapping and clean velocity resets; prevents stale landing or travel state on repeat visits while preserving the mission snapshot.
 - Planet surface images are bundled local assets loaded inside Canvas Suspense; avoids runtime third-party image dependencies.
 - Manual landing uses a planet-relative tangent frame with shared terrain height calculations and a side camera; cached per-destination terrain is reused from every approach, and gas giants use explicitly fictional cloud decks rather than claiming solid ground.
+- Landing input uses a mode-specific axis mapping, with vertical acceleration isolated from camera-relative lateral/depth movement; this preserves orbital bindings and makes landing arrows match screen directions.
 - Assisted flight is a switchable velocity controller; Newtonian flight remains available for unassisted docking.
 - Motion effects are speed-dependent peripheral blur and pooled star streaks, disabled on landing; keeps the vehicle readable.
 - Flight HUD omits telemetry and labels while retaining separate interactive controls; keeps flight scenery unobstructed.
 - Licensed CC0 asteroid meshes are served through a project asset pointer; engineered debris retains custom detailed geometry and generated wear maps.
-- Destination selection is a separate DOM overlay, and warp visuals use pooled camera-local geometry plus synthesized audio; keeps the flight viewport clear without runtime media dependencies.
+- Destination selection is a separate DOM overlay; transfer warp uses a single aspect-correct clip-space shader driven by transfer progress, without looping DOM rays or letterbox masks, so camera changes cannot clip or desynchronize it.
+- The opening score is original Web Audio music scheduled against AudioContext time with a single reusable music bus; user gestures enable playback, pause suspends it, and teardown clears scheduled voices.

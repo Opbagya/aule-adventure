@@ -9,8 +9,8 @@ class SpeedBlur extends Effect {
     super("SpeedBlur", `uniform float strength;
       void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
         vec2 d = uv - vec2(0.5);
-        float edge = smoothstep(0.16, 0.65, length(d));
-        vec2 v = d * strength * edge * 0.018;
+        float edge = smoothstep(0.12, 0.58, length(d));
+        vec2 v = d * strength * edge * 0.034;
         vec4 c = inputColor * 0.4;
         c += texture2D(inputBuffer, uv - v) * 0.2;
         c += texture2D(inputBuffer, uv + v) * 0.2;
@@ -25,7 +25,7 @@ export function MotionBlur() {
   const effect = useMemo(() => new SpeedBlur(), []);
   const reduced = useRef(false);
   useEffect(() => { const q = window.matchMedia("(prefers-reduced-motion: reduce)"); reduced.current = q.matches; const change = () => { reduced.current = q.matches; }; q.addEventListener("change", change); return () => { q.removeEventListener("change", change); effect.dispose(); }; }, [effect]);
-  useFrame(() => { const u = effect.uniforms.get("strength"); if (u) u.value = reduced.current || sim.landing !== "orbit" ? 0 : sim.motion; });
+  useFrame(() => { const u = effect.uniforms.get("strength"); if (u) u.value = reduced.current || sim.landing !== "orbit" ? 0 : sim.screen === "briefing" ? 0.16 : sim.motion; });
   return <primitive object={effect} />;
 }
 
@@ -64,7 +64,7 @@ export function SpeedStreaks() {
   }, [data]);
   useFrame(({ camera }, raw) => {
     const mesh = root.current; if (!mesh) return;
-    mesh.visible = !reduced.current && sim.motion > 0.08 && sim.screen === "playing" && sim.landing === "orbit";
+    mesh.visible = !reduced.current && !sim.transferActive && sim.motion > 0.08 && sim.screen === "playing" && sim.landing === "orbit";
     if (!mesh.visible) return;
     mesh.position.copy(camera.position); mesh.quaternion.copy(camera.quaternion);
     data.time += Math.min(raw, 0.05) * (sim.boosting || sim.transferActive ? 180 : 35);
@@ -88,28 +88,43 @@ export function SpeedStreaks() {
   </mesh>;
 }
 
-/** A camera-local, single-draw-call warp tunnel; no downloaded media or per-frame allocations. */
+/** Clip-space tunnel stays edge-to-edge regardless of camera motion or viewport aspect. */
 export function WarpTunnel() {
   const root = useRef<THREE.Mesh>(null);
-  const uniforms = useMemo(() => ({ time: new THREE.Uniform(0), strength: new THREE.Uniform(0), color: new THREE.Uniform(new THREE.Color()) }), []);
+  const uniforms = useMemo(() => ({ time: new THREE.Uniform(0), strength: new THREE.Uniform(0), aspect: new THREE.Uniform(1), color: new THREE.Uniform(new THREE.Color()) }), []);
   const reduced = useRef(false);
   useEffect(() => {
-    reduced.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const change = () => { reduced.current = query.matches; };
+    change(); query.addEventListener("change", change);
     const canvas = document.createElement("canvas"); const c = canvas.getContext("2d");
     if (c) { c.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--hyperspace-tail").trim(); c.fillRect(0, 0, 1, 1); const p = c.getImageData(0, 0, 1, 1).data; uniforms.color.value.setRGB((p[0] ?? 0)/255, (p[1] ?? 0)/255, (p[2] ?? 0)/255, THREE.SRGBColorSpace); }
+    return () => query.removeEventListener("change", change);
   }, [uniforms]);
-  useFrame(({ camera }, raw) => {
+  useFrame(({ size }) => {
     const m = root.current; if (!m) return;
-    m.visible = !reduced.current && sim.transferActive && sim.screen === "playing";
-    m.position.copy(camera.position).add(new THREE.Vector3(0, 0, -3).applyQuaternion(camera.quaternion)); m.quaternion.copy(camera.quaternion);
-    uniforms.time.value += Math.min(raw, 0.05);
-    uniforms.strength.value = Math.sin(Math.PI * sim.transfer) ** 0.7;
+    m.visible = !reduced.current && sim.transferActive && (sim.screen === "playing" || sim.screen === "paused");
+    uniforms.aspect.value = size.width / Math.max(1, size.height);
+    uniforms.time.value = sim.transfer * 5;
+    uniforms.strength.value = THREE.MathUtils.smoothstep(sim.transfer, 0, 0.18) * (1 - THREE.MathUtils.smoothstep(sim.transfer, 0.78, 1));
   });
-  return <mesh ref={root} frustumCulled={false} position-z={-80}>
-    <planeGeometry args={[12, 12]} />
+  return <mesh ref={root} frustumCulled={false} renderOrder={1000}>
+    <planeGeometry args={[2, 2]} />
     <shaderMaterial transparent depthWrite={false} depthTest={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} uniforms={uniforms}
-      vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
-      fragmentShader={`varying vec2 vUv; uniform float time; uniform float strength; uniform vec3 color;
-        void main(){vec2 p=(vUv-0.5)*2.0;float r=length(p);float a=atan(p.y,p.x);float band=sin(a*76.0+sin(r*22.0-time*2.0)*0.8);float line=pow(max(0.0,band),14.0);float flow=0.4+0.6*pow(0.5+0.5*sin(r*100.0-time*35.0),2.0);float edge=smoothstep(0.045,0.25,r);gl_FragColor=vec4(color*(line*4.0+0.2),strength*edge*(line*flow*0.75+0.055));}`}/>
+      vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}`}
+      fragmentShader={`varying vec2 vUv; uniform float time; uniform float strength; uniform float aspect; uniform vec3 color;
+        void main(){
+          vec2 p=(vUv-0.5)*2.0; p.x*=aspect;
+          float r=length(p); float a=atan(p.y,p.x);
+          // Integer angular frequencies close the seam; gentle continuous flow never resets.
+          float bend=sin(r*3.0-time*1.1)*0.3;
+          float band=sin(a*48.0+bend+sin(a*7.0)*0.6);
+          float line=smoothstep(0.7,0.99,band);
+          float fine=pow(max(0.0,sin(a*83.0-bend)),10.0)*0.22;
+          float flow=0.65+0.35*sin(r*12.0-time*9.0+sin(a*11.0));
+          float edge=smoothstep(0.045,0.32,r);
+          float veil=0.035+0.045*smoothstep(0.1,1.4,r);
+          gl_FragColor=vec4(color*(1.2+line*2.0),strength*edge*((line+fine)*flow*0.65+veil));
+        }`}/>
   </mesh>;
 }

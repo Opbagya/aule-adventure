@@ -54,6 +54,8 @@ export const sim = {
   transferActive: false,
   transferFrom: new THREE.Vector3(),
   transferTo: new THREE.Vector3(),
+  transferFromQuat: new THREE.Quaternion(),
+  transferToQuat: new THREE.Quaternion(),
   boosting: false,
   motion: 0,
   cruise: false,
@@ -198,10 +200,11 @@ export function travelTo(id: DestinationId | "mission") {
   sim.transferActive = true;
   sim.vel.set(0, 0, 0);
   sim.angVel.set(0, 0, 0);
-  sim.quat.identity();
+  sim.transferFromQuat.copy(sim.quat);
   sim.view = 1;
   const direction = sim.transferTo.clone().sub(sim.pos);
-  if (direction.lengthSq() > 0.001) sim.quat.setFromUnitVectors(new THREE.Vector3(0, 0, -1), direction.normalize());
+  sim.transferToQuat.copy(sim.quat);
+  if (direction.lengthSq() > 0.001) sim.transferToQuat.setFromUnitVectors(new THREE.Vector3(0, 0, -1), direction.normalize());
   sim.surfaceVel.set(0, 0, 0);
   sim.altitude = 0;
   sim.landingQuality = "";
@@ -215,7 +218,8 @@ export function advanceTransfer(delta: number) {
   if (!sim.transferActive || sim.screen !== "playing") return false;
   sim.transfer = Math.min(1, sim.transfer + Math.max(0, delta) / 5);
   const t = THREE.MathUtils.smoothstep(sim.transfer, 0.18, 0.88);
-  sim.pos.lerpVectors(sim.transferFrom, sim.transferTo, t * t * (3 - 2 * t));
+  sim.pos.lerpVectors(sim.transferFrom, sim.transferTo, t);
+  sim.quat.slerpQuaternions(sim.transferFromQuat, sim.transferToQuat, THREE.MathUtils.smoothstep(sim.transfer, 0, 0.18));
   if (sim.transfer < 1) return false;
   sim.pos.copy(sim.transferTo);
   sim.transferActive = false;

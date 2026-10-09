@@ -101,15 +101,15 @@ export function WarpTunnel() {
   useFrame(({ camera }, raw) => {
     const m = root.current; if (!m) return;
     m.visible = !reduced.current && sim.transferActive && sim.screen === "playing";
-    m.position.copy(camera.position); m.quaternion.copy(camera.quaternion);
+    m.position.copy(camera.position).add(new THREE.Vector3(0, 0, -3).applyQuaternion(camera.quaternion)); m.quaternion.copy(camera.quaternion);
     uniforms.time.value += Math.min(raw, 0.05);
     uniforms.strength.value = Math.sin(Math.PI * sim.transfer) ** 0.7;
   });
   return <mesh ref={root} frustumCulled={false} position-z={-80}>
-    <cylinderGeometry args={[32, 32, 280, 48, 1, true]} />
+    <planeGeometry args={[12, 12]} />
     <shaderMaterial transparent depthWrite={false} depthTest={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} uniforms={uniforms}
-      vertexShader={`varying vec2 vUv; void main(){vUv=uv; vec3 p=position; p=vec3(p.x,p.z,-p.y-125.0); gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);}`}
+      vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
       fragmentShader={`varying vec2 vUv; uniform float time; uniform float strength; uniform vec3 color;
-        void main(){float band=sin(vUv.x*180.0+sin(vUv.y*24.0-time*3.0)*1.8); float line=pow(max(0.0,band),8.0); float wave=0.5+0.5*sin(vUv.y*80.0-time*25.0); float fade=smoothstep(0.0,0.2,vUv.y)*(1.0-smoothstep(0.9,1.0,vUv.y)); gl_FragColor=vec4(color*(line*5.0+wave*0.7),strength*fade*(line*0.85+0.18));}`}/>
+        void main(){vec2 p=(vUv-0.5)*2.0;float r=length(p);float a=atan(p.y,p.x);float band=sin(a*76.0+sin(r*22.0-time*2.0)*0.8);float line=pow(max(0.0,band),14.0);float flow=0.4+0.6*pow(0.5+0.5*sin(r*100.0-time*35.0),2.0);float edge=smoothstep(0.045,0.25,r);gl_FragColor=vec4(color*(line*4.0+0.2),strength*edge*(line*flow*0.75+0.055));}`}/>
   </mesh>;
 }

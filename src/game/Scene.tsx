@@ -10,7 +10,7 @@ import { SimLoop, Thrusters } from "./SimLoop";
 import { SUN_DIR, sim } from "./sim";
 import { Planets } from "./Planets";
 import { LandingGear, LandingSurface } from "./Landing";
-import { MotionBlur, SpeedStreaks, WarpTunnel } from "./FlightEffects";
+import { MotionBlur, SpeedStreaks } from "./FlightEffects";
 import { Asteroids } from "./Asteroids";
 
 function Lighting() {
@@ -89,7 +89,6 @@ export function SpaceScene() {
        <Suspense fallback={null}><DebrisField /><Asteroids /><LandingSurface /></Suspense>
        <LandingGear />
        <SpeedStreaks />
-       <WarpTunnel />
       <Thrusters />
       <Effects />
     </Canvas>

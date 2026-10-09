@@ -17,5 +17,5 @@
 - Motion effects are speed-dependent peripheral blur and pooled star streaks, disabled on landing; keeps the vehicle readable.
 - Flight HUD omits telemetry and labels while retaining separate interactive controls; keeps flight scenery unobstructed.
 - Licensed CC0 asteroid meshes are served through a project asset pointer; engineered debris retains custom detailed geometry and generated wear maps.
-- Destination selection is a separate DOM overlay; transfer warp uses a single aspect-correct clip-space shader driven by transfer progress, without looping DOM rays or letterbox masks, so camera changes cannot clip or desynchronize it.
+- Destination selection is a separate DOM overlay; transfer warp shares the aspect-correct fullscreen motion effect driven by transfer progress, without looping DOM rays or letterbox masks, so camera changes cannot clip or desynchronize it.
 - The opening score is original Web Audio music scheduled against AudioContext time with a single reusable music bus; user gestures enable playback, pause suspends it, and teardown clears scheduled voices.

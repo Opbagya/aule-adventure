@@ -72,6 +72,15 @@
 }
 
 :root {
+  --planet-mercury: oklch(0.66 0.015 90);
+  --planet-venus: oklch(0.78 0.08 85);
+  --planet-earth: oklch(0.58 0.12 220);
+  --planet-mars: oklch(0.61 0.12 35);
+  --planet-jupiter: oklch(0.75 0.055 65);
+  --planet-saturn: oklch(0.82 0.06 90);
+  --planet-uranus: oklch(0.8 0.09 190);
+  --planet-neptune: oklch(0.55 0.16 260);
+  --planet-shadow: inset -16px -7px 20px oklch(0.06 0.01 250 / 85%), inset 6px 3px 12px oklch(1 0 0 / 15%);
   --hyperspace-core: oklch(0.97 0.015 220);
   --hyperspace-tail: oklch(0.74 0.12 230);
   --brand-accent: oklch(0.48 0.26 266);
@@ -118,6 +127,16 @@
 }
 
 .mission-intro { background: var(--intro-scrim); }
+.planet-disc { display: block; width: 64px; height: 64px; border-radius: 50%; box-shadow: var(--planet-shadow); background-size: cover; background-position: center; flex-shrink: 0; }
+.planet-mercury { background-color: var(--planet-mercury); background-image: url('./assets/mars-regolith.jpg'); background-blend-mode: luminosity; }
+.planet-venus { background-color: var(--planet-venus); background-image: url('./assets/jupiter-surface.jpg'); background-blend-mode: luminosity; }
+.planet-earth { background-color: var(--planet-earth); background-image: url('/textures/earth_atmos_2048.jpg'); }
+.planet-mars { background-color: var(--planet-mars); background-image: url('./assets/mars-surface.jpg'); }
+.planet-jupiter { background-color: var(--planet-jupiter); background-image: url('./assets/jupiter-surface.jpg'); }
+.planet-saturn { position: relative; background-color: var(--planet-saturn); background-image: url('./assets/jupiter-surface.jpg'); background-blend-mode: luminosity; }
+.planet-saturn::after { content: ''; position: absolute; inset: 20px -14px; border: 6px solid var(--planet-saturn); border-radius: 50%; transform: rotate(-25deg); opacity: 0.75; }
+.planet-uranus { background-color: var(--planet-uranus); background-image: url('./assets/ice-ground.jpg'); background-blend-mode: soft-light; }
+.planet-neptune { background-color: var(--planet-neptune); background-image: url('./assets/ice-ground.jpg'); background-blend-mode: soft-light; }
 @media (max-width: 640px) {
   .mission-intro { background: oklch(0.16 0.003 100 / 80%); }
 }

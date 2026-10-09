@@ -50,9 +50,11 @@ export function LandingSurface() {
       if (deck.current) deck.current.visible = body.surface === "cloud";
     }
   });
+  const firstGeometry = geometries[0];
+  if (!firstGeometry) return null;
   return <group ref={root} visible={false}>
-    <mesh ref={terrain} geometry={geometries[0]} receiveShadow><meshStandardMaterial ref={material} bumpScale={0.2} roughness={0.98} /></mesh>
-    <mesh ref={deck} rotation-x={-Math.PI / 2} position-y={0.01} receiveShadow><circleGeometry args={[55, 64]} /><meshStandardMaterial map={maps[2]} color="silver" metalness={0.6} roughness={0.5} /></mesh>
+    <mesh ref={terrain} geometry={firstGeometry} receiveShadow><meshStandardMaterial ref={material} bumpScale={0.2} roughness={0.98} /></mesh>
+    <mesh ref={deck} rotation-x={-Math.PI / 2} position-y={0.01} receiveShadow><circleGeometry args={[55, 64]} /><meshStandardMaterial map={maps[2] ?? null} color="silver" metalness={0.6} roughness={0.5} /></mesh>
   </group>;
 }
 

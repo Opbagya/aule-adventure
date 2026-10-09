@@ -57,7 +57,7 @@ export const sim = {
   boosting: false,
   motion: 0,
   cruise: false,
-  landing: "orbit" as "orbit" | "automatic" | "manual" | "landed",
+  landing: "orbit" as "orbit" | "manual" | "landed",
   surfaceOrigin: new THREE.Vector3(),
   surfaceQuat: new THREE.Quaternion(),
   surfacePos: new THREE.Vector3(),
@@ -173,14 +173,14 @@ export function resetSim() {
 }
 
 export function travelTo(id: DestinationId | "mission") {
-  if (sim.transferActive || sim.docked) return;
+  if (sim.screen !== "playing" || sim.transferActive || sim.docked) return false;
   if (id === "mission") {
-    if (!sim.exploring) return;
+    if (!sim.exploring) return false;
     sim.transferTo.copy(sim.missionPos);
     sim.destination = "";
   } else {
     const body = DESTINATIONS.find((d) => d.id === id);
-    if (!body) return;
+    if (!body) return false;
     if (!sim.exploring) {
       sim.missionPos.copy(sim.pos);
       sim.missionVel.copy(sim.vel);
@@ -200,11 +200,42 @@ export function travelTo(id: DestinationId | "mission") {
   sim.angVel.set(0, 0, 0);
   sim.quat.identity();
   sim.view = 1;
+  const direction = sim.transferTo.clone().sub(sim.pos);
+  if (direction.lengthSq() > 0.001) sim.quat.setFromUnitVectors(new THREE.Vector3(0, 0, -1), direction.normalize());
+  sim.surfaceVel.set(0, 0, 0);
+  sim.altitude = 0;
+  sim.landingQuality = "";
+  sim.shake = 0;
+  sim.motion = 0;
+  return true;
+}
+
+/** One transfer path for every destination, including repeated visits and return. */
+export function advanceTransfer(delta: number) {
+  if (!sim.transferActive || sim.screen !== "playing") return false;
+  sim.transfer = Math.min(1, sim.transfer + Math.max(0, delta) / 5);
+  const t = THREE.MathUtils.smoothstep(sim.transfer, 0.18, 0.88);
+  sim.pos.lerpVectors(sim.transferFrom, sim.transferTo, t * t * (3 - 2 * t));
+  if (sim.transfer < 1) return false;
+  sim.pos.copy(sim.transferTo);
+  sim.transferActive = false;
+  sim.vel.set(0, 0, 0);
+  sim.angVel.set(0, 0, 0);
+  sim.thrustWorld.set(0, 0, 0);
+  const body = DESTINATIONS.find((d) => d.id === sim.destination);
+  if (body) sim.quat.setFromUnitVectors(new THREE.Vector3(0, 0, -1), body.center.clone().sub(sim.pos).normalize());
+  else {
+    sim.exploring = false;
+    sim.vel.copy(sim.missionVel);
+    sim.quat.copy(sim.missionQuat);
+    sim.angVel.copy(sim.missionAngVel);
+  }
+  return true;
 }
 
 export function approachSurface() {
-  if (!sim.exploring || sim.destination !== "mars" || sim.transferActive || sim.landing !== "orbit") return;
-  const body = DESTINATIONS.find((d) => d.id === "mars");
+  if (!sim.exploring || sim.transferActive || sim.landing !== "orbit") return;
+  const body = DESTINATIONS.find((d) => d.id === sim.destination);
   if (!body) return;
   sim.transferFrom.copy(sim.pos);
   sim.transferTo.copy(body.center).add(new THREE.Vector3(0, 0, body.radius + 140));
@@ -222,14 +253,13 @@ export function beginLanding(normal: THREE.Vector3, center: THREE.Vector3, radiu
   sim.vel.set(0, 0, 0);
   sim.angVel.set(0, 0, 0);
   sim.quat.copy(sim.surfaceQuat);
-  sim.landing = "automatic";
+  sim.surfacePos.x = 0;
+  sim.surfacePos.z = 0;
+  sim.altitude = sim.surfacePos.y - 2.65;
+  sim.gear = 1;
+  sim.landing = "manual";
   sim.boosting = false;
   sim.view = 1;
-}
-
-export function toggleLanding() {
-  if (sim.landing === "automatic") sim.landing = "manual";
-  else if (sim.landing === "manual") sim.landing = "automatic";
 }
 
 export function liftOff() {

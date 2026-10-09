@@ -8,7 +8,11 @@ export function Briefing({ onStart, controls }: { onStart: () => void; controls:
     <div className="mission-intro fixed inset-0 z-30 overflow-y-auto font-brand text-foreground">
       <header className="flex items-center justify-between px-6 py-7 md:px-12">
         <a href="https://aule.space/" target="_blank" rel="noreferrer" className="text-3xl font-semibold">aule<span className="ml-2 text-sm font-normal text-foreground/65">space</span></a>
-        <a href="https://aule.space/" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-foreground/75">The Aule fleet <ExternalLink size={14} /></a>
+        <a href="https://aule.space/" target="_blank" rel="noreferrer" className="group max-w-[55%] border-b border-foreground/25 pb-3 text-right sm:max-w-sm">
+          <span className="block text-xs text-foreground/60 sm:text-sm">What if satellites could live longer?</span>
+          <span className="mt-2 flex items-center justify-end gap-3 text-sm font-semibold sm:text-lg">Discover Aule Space <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" /></span>
+          <span className="mt-2 hidden text-xs text-foreground/65 sm:block">A startup building autonomous satellite servicing.</span>
+        </a>
       </header>
       <main className="mx-6 mt-14 max-w-xl pb-10 md:mx-12 md:mt-20">
         <div className="mb-6 flex items-center gap-3 text-xs text-foreground/70"><span className="h-1.5 w-1.5 rounded-full bg-brand-accent" /> ORBITAL OPERATIONS / 001</div>

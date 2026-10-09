@@ -1,4 +1,8 @@
 # Simulator improvements
+- [x] Improve landing surface, horizon, lighting and side-camera presentation; Up/Down rise/descend. Five input tests pass; browser captured ascent/descent velocity changes. Uninterrupted descent remains unverified due to slow software graphics.
+- [x] Add opening camera drift, subtle peripheral blur and vignette; stronger hyperdrive motion blur, disabled during landing.
+- [x] Replace clipped looping rays with aspect-correct fullscreen warp effect and smoothly aligned departure; screenshot verified, repeat-trip regression tests pass.
+- [x] Replace opening robotic narration with original cinematic background music; browser recorded scheduled musical voices and zero speech, with pause/mute controls.
 - [x] Inviting Aule discovery link and startup description.
 - [x] Manual-only landing and reusable, distinct planetary surfaces; fictional cloud decks on gas giants.
 - [x] All eight destinations, cinematic warp and sound, no bottom options bar.

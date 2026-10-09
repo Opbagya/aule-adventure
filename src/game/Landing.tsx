@@ -1,42 +1,57 @@
-import { useTexture } from "@react-three/drei";
+import { useGLTF, useTexture } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import regolith from "@/assets/mars-regolith.jpg";
 import earthGround from "@/assets/earth-ground.jpg";
 import iceGround from "@/assets/ice-ground.jpg";
+import asteroidAsset from "@/assets/asteroids.asset.json";
 import { sim } from "./sim";
 import { DESTINATIONS } from "./destinations";
 
 export const FOOT_HEIGHT = 2.65;
 export function surfaceHeight(x: number, z: number, relief = DESTINATIONS.find((d) => d.id === sim.destination)?.relief ?? 7) {
   const fade = THREE.MathUtils.smoothstep(Math.hypot(x, z), 10, 55);
-  return relief / 7 * fade * (Math.sin(x * 0.028) * Math.cos(z * 0.035) * 7 + Math.sin(x * 0.09 + z * 0.055) * 2);
+  const distance = Math.hypot(x, z);
+  const ridges = THREE.MathUtils.smoothstep(distance, 120, 450) * (28 + 40 * Math.sin(x * 0.007) * Math.cos(z * 0.009));
+  return relief / 7 * fade * (Math.sin(x * 0.028) * Math.cos(z * 0.035) * 7 + Math.sin(x * 0.09 + z * 0.055) * 2 + ridges);
 }
 
 export function LandingSurface() {
   const root = useRef<THREE.Group>(null);
   const maps = useTexture([regolith, earthGround, iceGround]);
   const material = useRef<THREE.MeshStandardMaterial>(null);
-  const deck = useRef<THREE.Mesh>(null);
+  const deck = useRef<THREE.Group>(null);
   const terrain = useRef<THREE.Mesh>(null);
+  const sky = useRef<THREE.Mesh>(null);
+  const fill = useRef<THREE.HemisphereLight>(null);
+  const skyUniforms = useMemo(() => ({ tint: new THREE.Uniform(new THREE.Color()), cloud: new THREE.Uniform(0) }), []);
   const geometries = useMemo(() => DESTINATIONS.map((body) => {
-    const g = new THREE.PlaneGeometry(1400, 1400, 80, 80);
+    const g = new THREE.PlaneGeometry(6000, 6000, 160, 160);
     g.rotateX(-Math.PI / 2);
     const p = g.getAttribute("position");
-    for (let i = 0; i < p.count; i++) p.setY(i, surfaceHeight(p.getX(i), p.getZ(i), body.relief));
+    // Concentrate vertices near touchdown while keeping a broad, unbroken horizon.
+    for (let i = 0; i < p.count; i++) {
+      const warp = (v: number) => Math.sign(v) * (Math.abs(v) / 3000) ** 2 * 3000;
+      const x = warp(p.getX(i)), z = warp(p.getZ(i));
+      p.setXYZ(i, x, surfaceHeight(x, z, body.relief), z);
+    }
     g.computeVertexNormals();
     return g;
   }), []);
   const bumps = useMemo(() => maps.map((map) => { const t = map.clone(); t.colorSpace = THREE.NoColorSpace; t.needsUpdate = true; return t; }), [maps]);
   maps.forEach((map) => { map.colorSpace = THREE.SRGBColorSpace; });
-  for (const t of [...maps, ...bumps]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(85, 85); t.anisotropy = 4; }
+  for (const t of [...maps, ...bumps]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(180, 180); t.anisotropy = 8; }
+  // Use physical world-space UVs after nonuniform terrain tessellation.
+  geometries.forEach((g) => { const p = g.getAttribute("position"), uv = g.getAttribute("uv"); for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / 6000, p.getZ(i) / 6000); });
+  useEffect(() => () => { geometries.forEach((g) => g.dispose()); bumps.forEach((t) => t.dispose()); }, [geometries, bumps]);
   const active = useRef("");
   useFrame(() => {
     if (!root.current) return;
     root.current.visible = sim.landing !== "orbit";
     root.current.position.copy(sim.surfaceOrigin);
     root.current.quaternion.copy(sim.surfaceQuat);
+    sky.current?.position.set(sim.surfacePos.x, 0, sim.surfacePos.z);
     const index = DESTINATIONS.findIndex((d) => d.id === sim.destination);
     const body = DESTINATIONS[index];
     if (body && material.current && terrain.current && active.current !== body.id) {
@@ -45,6 +60,9 @@ export function LandingSurface() {
       material.current.map = maps[texture] ?? null;
       material.current.bumpMap = bumps[texture] ?? null;
       material.current.color.set(body.tint);
+      skyUniforms.tint.value.set(body.tint).lerp(new THREE.Color().setRGB(0.18, 0.2, 0.24), 0.55);
+      skyUniforms.cloud.value = body.surface === "cloud" ? 1 : 0;
+      if (fill.current) { fill.current.color.copy(skyUniforms.tint.value); fill.current.intensity = 1.25; }
       material.current.needsUpdate = true;
       terrain.current.geometry = geometries[index] ?? geometries[0] ?? terrain.current.geometry;
       if (deck.current) deck.current.visible = body.surface === "cloud";
@@ -53,9 +71,55 @@ export function LandingSurface() {
   const firstGeometry = geometries[0];
   if (!firstGeometry) return null;
   return <group ref={root} visible={false}>
-    <mesh ref={terrain} geometry={firstGeometry} receiveShadow><meshStandardMaterial ref={material} bumpScale={0.2} roughness={0.98} /></mesh>
-    <mesh ref={deck} rotation-x={-Math.PI / 2} position-y={0.01} receiveShadow><circleGeometry args={[55, 64]} /><meshStandardMaterial map={maps[2] ?? null} color="silver" metalness={0.6} roughness={0.5} /></mesh>
+    <hemisphereLight ref={fill} intensity={1.25} />
+    <mesh ref={sky} renderOrder={-20}>
+      <sphereGeometry args={[4200, 32, 16]} />
+      <shaderMaterial side={THREE.BackSide} depthWrite={false} uniforms={skyUniforms}
+        vertexShader={`varying vec3 direction; void main(){direction=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
+        fragmentShader={`varying vec3 direction;uniform vec3 tint;uniform float cloud;void main(){float y=normalize(direction).y;float haze=exp(-max(y,0.0)*5.0);vec3 c=tint*(0.12+0.9*haze);c=mix(c,tint*(0.7+0.45*haze),cloud);gl_FragColor=vec4(c,1.0);}`} />
+    </mesh>
+    <mesh ref={terrain} geometry={firstGeometry} receiveShadow><meshStandardMaterial ref={material} bumpScale={0.45} roughness={0.95} /></mesh>
+    <SurfaceRocks />
+    <group ref={deck} position-y={-0.12}>
+      <mesh receiveShadow><cylinderGeometry args={[16, 16.5, 0.22, 64]} /><meshStandardMaterial map={maps[2] ?? null} metalness={0.55} roughness={0.48} /></mesh>
+      <mesh rotation-x={-Math.PI / 2} position-y={0.13}><ringGeometry args={[13.8, 14, 64]} /><meshStandardMaterial emissive={skyUniforms.tint.value} emissiveIntensity={2} /></mesh>
+    </group>
   </group>;
+}
+
+function SurfaceRocks() {
+  const { scene } = useGLTF(asteroidAsset.url);
+  const group = useMemo(() => {
+    const root = new THREE.Group();
+    const source = scene.getObjectByName("asteroid-set_3");
+    if (!source) return root;
+    const template = source.clone(true);
+    template.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(template);
+    const size = bounds.getSize(new THREE.Vector3());
+    template.position.sub(bounds.getCenter(new THREE.Vector3()));
+    const normalized = new THREE.Group(); normalized.add(template);
+    normalized.scale.setScalar(1 / Math.max(size.x, size.y, size.z, 0.001));
+    for (let i = 0; i < 24; i++) {
+      const rock = new THREE.Group(); rock.add(normalized.clone(true));
+      const angle = i * 2.399963, radius = 18 + (i * 19 % 120);
+      rock.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+      rock.rotation.set(0.1 * (i % 3), angle, 0.15 * (i % 4));
+      rock.scale.setScalar(0.6 + i % 5 * 0.45);
+      rock.traverse((o) => { if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true; });
+      root.add(rock);
+    }
+    return root;
+  }, [scene]);
+  const active = useRef("");
+  useFrame(() => {
+    if (active.current === sim.destination) return;
+    active.current = sim.destination;
+    const body = DESTINATIONS.find((d) => d.id === sim.destination);
+    group.visible = body?.surface !== "cloud";
+    for (const rock of group.children) rock.position.y = surfaceHeight(rock.position.x, rock.position.z, body?.relief ?? 7) - 0.15;
+  });
+  return <primitive object={group} />;
 }
 
 export function LandingGear() {

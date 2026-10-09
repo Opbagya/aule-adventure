@@ -6,26 +6,46 @@ import { sim } from "./sim";
 
 class SpeedBlur extends Effect {
   constructor() {
-    super("SpeedBlur", `uniform float strength;
+    super("SpeedBlur", `uniform float strength; uniform float warp; uniform float time; uniform float aspect; uniform vec3 warpColor;
       void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
         vec2 d = uv - vec2(0.5);
-        float edge = smoothstep(0.16, 0.65, length(d));
-        vec2 v = d * strength * edge * 0.018;
+        float edge = smoothstep(0.12, 0.58, length(d));
+        vec2 v = d * strength * edge * 0.034;
         vec4 c = inputColor * 0.4;
         c += texture2D(inputBuffer, uv - v) * 0.2;
         c += texture2D(inputBuffer, uv + v) * 0.2;
         c += texture2D(inputBuffer, uv - v * 2.0) * 0.1;
         c += texture2D(inputBuffer, uv + v * 2.0) * 0.1;
+        vec2 p=d*2.0; p.x*=aspect;
+        float r=length(p), a=atan(p.y,p.x);
+        float bend=sin(r*3.0-time*1.1)*0.3;
+        float line=smoothstep(0.7,0.99,sin(a*48.0+bend+sin(a*7.0)*0.6));
+        float fine=pow(max(0.0,sin(a*83.0-bend)),10.0)*0.22;
+        float flow=0.65+0.35*sin(r*12.0-time*9.0+sin(a*11.0));
+        float glow=warp*smoothstep(0.045,0.32,r)*((line+fine)*flow*0.8+0.055);
+        c.rgb += warpColor*glow;
         outputColor = c;
-      }`, { uniforms: new Map([["strength", new THREE.Uniform(0)]]) });
+      }`, { uniforms: new Map<string, THREE.Uniform>([["strength", new THREE.Uniform(0)], ["warp", new THREE.Uniform(0)], ["time", new THREE.Uniform(0)], ["aspect", new THREE.Uniform(1)], ["warpColor", new THREE.Uniform(new THREE.Color())]]) });
   }
 }
 
 export function MotionBlur() {
   const effect = useMemo(() => new SpeedBlur(), []);
   const reduced = useRef(false);
+  useEffect(() => {
+    const canvas = document.createElement("canvas"), ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--hyperspace-tail").trim(); ctx.fillRect(0, 0, 1, 1);
+    const p = ctx.getImageData(0, 0, 1, 1).data;
+    effect.uniforms.get("warpColor")?.value.setRGB((p[0] ?? 0) / 255, (p[1] ?? 0) / 255, (p[2] ?? 0) / 255, THREE.SRGBColorSpace);
+  }, [effect]);
   useEffect(() => { const q = window.matchMedia("(prefers-reduced-motion: reduce)"); reduced.current = q.matches; const change = () => { reduced.current = q.matches; }; q.addEventListener("change", change); return () => { q.removeEventListener("change", change); effect.dispose(); }; }, [effect]);
-  useFrame(() => { const u = effect.uniforms.get("strength"); if (u) u.value = reduced.current || sim.landing !== "orbit" ? 0 : sim.motion; });
+  useFrame(({ size }) => {
+    const u = effect.uniforms.get("strength"); if (u) u.value = reduced.current || sim.landing !== "orbit" ? 0 : sim.screen === "briefing" ? 0.16 : sim.motion;
+    const warp = effect.uniforms.get("warp"); if (warp) warp.value = reduced.current || !sim.transferActive ? 0 : THREE.MathUtils.smoothstep(sim.transfer, 0, 0.18) * (1 - THREE.MathUtils.smoothstep(sim.transfer, 0.78, 1));
+    const time = effect.uniforms.get("time"); if (time) time.value = sim.transfer * 5;
+    const aspect = effect.uniforms.get("aspect"); if (aspect) aspect.value = size.width / Math.max(1, size.height);
+  });
   return <primitive object={effect} />;
 }
 
@@ -64,7 +84,7 @@ export function SpeedStreaks() {
   }, [data]);
   useFrame(({ camera }, raw) => {
     const mesh = root.current; if (!mesh) return;
-    mesh.visible = !reduced.current && sim.motion > 0.08 && sim.screen === "playing" && sim.landing === "orbit";
+    mesh.visible = !reduced.current && !sim.transferActive && sim.motion > 0.08 && sim.screen === "playing" && sim.landing === "orbit";
     if (!mesh.visible) return;
     mesh.position.copy(camera.position); mesh.quaternion.copy(camera.quaternion);
     data.time += Math.min(raw, 0.05) * (sim.boosting || sim.transferActive ? 180 : 35);
@@ -88,28 +108,3 @@ export function SpeedStreaks() {
   </mesh>;
 }
 
-/** A camera-local, single-draw-call warp tunnel; no downloaded media or per-frame allocations. */
-export function WarpTunnel() {
-  const root = useRef<THREE.Mesh>(null);
-  const uniforms = useMemo(() => ({ time: new THREE.Uniform(0), strength: new THREE.Uniform(0), color: new THREE.Uniform(new THREE.Color()) }), []);
-  const reduced = useRef(false);
-  useEffect(() => {
-    reduced.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const canvas = document.createElement("canvas"); const c = canvas.getContext("2d");
-    if (c) { c.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--hyperspace-tail").trim(); c.fillRect(0, 0, 1, 1); const p = c.getImageData(0, 0, 1, 1).data; uniforms.color.value.setRGB((p[0] ?? 0)/255, (p[1] ?? 0)/255, (p[2] ?? 0)/255, THREE.SRGBColorSpace); }
-  }, [uniforms]);
-  useFrame(({ camera }, raw) => {
-    const m = root.current; if (!m) return;
-    m.visible = !reduced.current && sim.transferActive && sim.screen === "playing";
-    m.position.copy(camera.position).add(new THREE.Vector3(0, 0, -3).applyQuaternion(camera.quaternion)); m.quaternion.copy(camera.quaternion);
-    uniforms.time.value += Math.min(raw, 0.05);
-    uniforms.strength.value = Math.sin(Math.PI * sim.transfer) ** 0.7;
-  });
-  return <mesh ref={root} frustumCulled={false} position-z={-80}>
-    <planeGeometry args={[12, 12]} />
-    <shaderMaterial transparent depthWrite={false} depthTest={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} uniforms={uniforms}
-      vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
-      fragmentShader={`varying vec2 vUv; uniform float time; uniform float strength; uniform vec3 color;
-        void main(){vec2 p=(vUv-0.5)*2.0;float r=length(p);float a=atan(p.y,p.x);float band=sin(a*76.0+sin(r*22.0-time*2.0)*0.8);float line=pow(max(0.0,band),14.0);float flow=0.4+0.6*pow(0.5+0.5*sin(r*100.0-time*35.0),2.0);float edge=smoothstep(0.045,0.25,r);gl_FragColor=vec4(color*(line*4.0+0.2),strength*edge*(line*flow*0.75+0.055));}`}/>
-  </mesh>;
-}

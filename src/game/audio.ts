@@ -2,6 +2,9 @@ let ctx: AudioContext | null = null;
 let master: GainNode;
 let hiss: GainNode;
 let noiseBuf: AudioBuffer;
+let musicGain: GainNode | null = null;
+let musicTimer: ReturnType<typeof setInterval> | null = null;
+const musicNodes = new Set<OscillatorNode>();
 
 function noiseSrc() {
   if (!ctx) throw new Error("Audio not initialized");
@@ -76,6 +79,64 @@ export const audio = {
   setHiss(v: number) {
     if (!ctx) return;
     hiss.gain.setTargetAtTime(v * 0.07, ctx.currentTime, 0.04);
+  },
+  music(on: boolean) {
+    if (!ctx) return;
+    const context = ctx;
+    if (musicGain) { musicGain.gain.setTargetAtTime(on ? 0.42 : 0, context.currentTime, 0.5); return; }
+    if (!on) return;
+    // Original slow organ/string-like score, not a film recording or copied melody.
+    const bus = context.createGain(); musicGain = bus;
+    bus.gain.setValueAtTime(0, context.currentTime);
+    bus.gain.setTargetAtTime(0.42, context.currentTime, 1.5);
+    bus.connect(master);
+    const reverb = context.createConvolver();
+    const impulse = context.createBuffer(2, Math.floor(context.sampleRate * 3), context.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const samples = impulse.getChannelData(ch);
+      for (let i = 0; i < samples.length; i++) samples[i] = (Math.random() * 2 - 1) * Math.exp(-i / context.sampleRate * 2.4) * 0.3;
+    }
+    reverb.buffer = impulse;
+    const wet = context.createGain(); wet.gain.value = 0.4;
+    reverb.connect(wet).connect(bus);
+    const voice = (midi: number, at: number, duration: number, volume: number, pad: boolean) => {
+      const oscillator = context.createOscillator();
+      if (pad) {
+        oscillator.setPeriodicWave(context.createPeriodicWave(new Float32Array(6), new Float32Array([0, 1, 0.22, 0.08, 0.03, 0.01])));
+      } else oscillator.type = "sine";
+      oscillator.frequency.value = 440 * 2 ** ((midi - 69) / 12);
+      const gain = context.createGain();
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(volume, at + (pad ? 1.4 : 0.035));
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + duration);
+      oscillator.connect(gain); gain.connect(bus); gain.connect(reverb);
+      musicNodes.add(oscillator);
+      oscillator.onended = () => { musicNodes.delete(oscillator); oscillator.disconnect(); gain.disconnect(); };
+      oscillator.start(at); oscillator.stop(at + duration + 0.05);
+    };
+    const chords = [[45, 52, 59, 60], [48, 55, 59, 64], [40, 47, 54, 55], [43, 50, 57, 62]];
+    const steps = [0, 2, 1, 3, 2, 1, 3, 2];
+    const beat = 60 / 72;
+    let index = 0, next = context.currentTime + 0.08;
+    const schedule = () => {
+      if (context.state !== "running") return;
+      if (next < context.currentTime) next = context.currentTime + 0.04;
+      while (next < context.currentTime + 0.15) {
+        const chord = chords[Math.floor(index / 8) % chords.length];
+        if (!chord) return;
+        if (index % 8 === 0) for (const note of chord) voice(note, next, beat * 9, 0.045, true);
+        const note = chord[steps[index % 8] ?? 0];
+        if (note !== undefined) voice(note + 24, next, beat * 2.7, 0.055, false);
+        next += beat; index++;
+      }
+    };
+    schedule(); musicTimer = setInterval(schedule, 50);
+  },
+  stopMusic() {
+    if (musicTimer) clearInterval(musicTimer);
+    musicTimer = null;
+    for (const node of musicNodes) node.stop();
+    musicNodes.clear(); musicGain?.disconnect(); musicGain = null;
   },
   thud() {
     if (!ctx) return;

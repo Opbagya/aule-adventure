@@ -11,6 +11,7 @@ import { RCS_LOCAL } from "./Models";
 import { getGlow } from "./textures";
 import { DESTINATIONS } from "./destinations";
 import { FOOT_HEIGHT, surfaceHeight } from "./Landing";
+import { landingVerticalVelocity, LANDING_ACCEL } from "./landing-controls";
 
 const Z = new THREE.Vector3(0, 0, 1);
 const D = new THREE.Vector3();
@@ -150,13 +151,13 @@ export function SimLoop() {
       sim.gear = Math.min(1, sim.gear + dt * 0.6);
       const ground = surfaceHeight(sim.surfacePos.x, sim.surfacePos.z);
       const alt = Math.max(0, sim.surfacePos.y - ground - FOOT_HEIGHT);
-      const ax = readAxes();
+      const ax = readAxes(true);
       if (sim.landing !== "landed") {
-        // Manual side-camera translation: arrows move across/deeper, Space/C rise/descend.
-        T1.set(ax.surge * 6, 0, -ax.sway * 6);
+        // Camera-right is tangent +Z/-X; arrow up/down exclusively apply vertical thrust.
+        T1.set((-18 * ax.sway - 28 * ax.surge) / 33.29 * 6, 0, (28 * ax.sway - 18 * ax.surge) / 33.29 * 6);
         sim.surfaceVel.x += (T1.x - sim.surfaceVel.x) * (1 - Math.exp(-4 * dt));
         sim.surfaceVel.z += (T1.z - sim.surfaceVel.z) * (1 - Math.exp(-4 * dt));
-        sim.surfaceVel.y = THREE.MathUtils.clamp(sim.surfaceVel.y + (ax.heave * 5 - 0.65) * dt, -12, 8);
+        sim.surfaceVel.y = landingVerticalVelocity(sim.surfaceVel.y, ax.heave, dt);
         sim.surfacePos.addScaledVector(sim.surfaceVel, dt);
         const floor = surfaceHeight(sim.surfacePos.x, sim.surfacePos.z) + FOOT_HEIGHT;
         if (sim.surfacePos.y <= floor) {
@@ -181,7 +182,8 @@ export function SimLoop() {
       sim.quat.copy(sim.surfaceQuat);
       sim.vel.copy(sim.surfaceVel).applyQuaternion(sim.surfaceQuat);
       sim.altitude = Math.max(0, sim.surfacePos.y - surfaceHeight(sim.surfacePos.x, sim.surfacePos.z) - FOOT_HEIGHT);
-      sim.thrustWorld.copy(sim.surfaceVel).applyQuaternion(sim.surfaceQuat).multiplyScalar(0.3);
+      sim.thrustWorld.set(0, sim.landing === "landed" ? 0 : ax.heave * LANDING_ACCEL, 0).applyQuaternion(sim.surfaceQuat);
+      audio.setHiss(sim.landing === "landed" ? 0 : Math.abs(ax.heave) * 0.6);
     }
     const motionTarget = playing && sim.landing === "orbit" ? (sim.transferActive || sim.boosting ? 1 : Math.min(0.32, sim.vel.length() / 100)) : 0;
     sim.motion += (motionTarget - sim.motion) * (1 - Math.exp(-4 * dt));
@@ -348,17 +350,17 @@ export function SimLoop() {
     // --- camera ---
     const k = 1 - Math.exp(-6 * dt);
     if (sim.screen === "briefing") {
-      cam.position.set(sim.pos.x + 8, sim.pos.y + 3, sim.pos.z + 12);
+      const drift = state.clock.elapsedTime * 0.1;
+      cam.position.set(sim.pos.x + 8 + Math.sin(drift) * 1.2, sim.pos.y + 2.5 + Math.sin(drift * 0.7) * 0.3, sim.pos.z + 13);
       cam.up.set(0, 1, 0);
       cam.lookAt(sim.pos.x - 6, sim.pos.y, sim.pos.z - 3);
       cam.fov = 52;
     } else if (sim.landing !== "orbit") {
-      const lift = Math.min(18, sim.altitude * 0.18);
-      T1.copy(sim.surfacePos).add(new THREE.Vector3(34 + lift, 9 + lift * 0.4, 12)).applyQuaternion(sim.surfaceQuat).add(sim.surfaceOrigin);
+      T1.copy(sim.surfacePos).add(T3.set(28, 5, 18)).applyQuaternion(sim.surfaceQuat).add(sim.surfaceOrigin);
       cam.position.copy(T1);
       cam.up.set(0, 1, 0).applyQuaternion(sim.surfaceQuat);
-      cam.lookAt(T2.copy(sim.pos).add(T3.set(0, -1, 0).applyQuaternion(sim.surfaceQuat)));
-      cam.fov = 48;
+      cam.lookAt(T2.copy(sim.pos).add(T3.set(0, -1.7, 0).applyQuaternion(sim.surfaceQuat)));
+      cam.fov = 44;
     } else if (sim.view === 0) {
       cam.position.copy(N).add(T1.set(0, 0.2, -0.1).applyQuaternion(sim.quat));
       cam.quaternion.copy(sim.quat);

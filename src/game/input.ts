@@ -29,14 +29,14 @@ export function attachKeyboard(onPress: (code: string) => void) {
 const k = (c: string) => (keys.has(c) ? 1 : 0);
 const clamp = (v: number) => Math.max(-1, Math.min(1, v));
 
-export function readAxes() {
+export function readAxes(landing = false) {
   return {
     surge: clamp(
-      k("KeyR") + k("ArrowUp") -
-        k("ControlLeft") - k("ControlRight") - k("KeyF") - k("ArrowDown") + touch.ty,
+      k("KeyR") + (landing ? 0 : k("ArrowUp")) -
+        k("ControlLeft") - k("ControlRight") - k("KeyF") - (landing ? 0 : k("ArrowDown")) + (landing ? 0 : touch.ty),
     ),
     sway: clamp(k("ArrowRight") - k("ArrowLeft") + touch.tx),
-    heave: clamp(k("Space") - k("KeyC") + touch.heave),
+    heave: clamp(k("Space") - k("KeyC") + touch.heave + (landing ? k("ArrowUp") - k("ArrowDown") + touch.ty : 0)),
     pitch: clamp(k("KeyS") - k("KeyW") + touch.ry),
     yaw: clamp(k("KeyA") - k("KeyD") - touch.rx),
     roll: clamp(k("KeyQ") - k("KeyE") + touch.roll),

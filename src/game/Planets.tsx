@@ -4,11 +4,12 @@ import { useRef } from "react";
 import * as THREE from "three";
 import marsMap from "@/assets/mars-surface.jpg";
 import jupiterMap from "@/assets/jupiter-surface.jpg";
+import earthAtmos from "@/assets/earth_atmos_2048.jpg";
 import { DESTINATIONS } from "./destinations";
 import { sim } from "./sim";
 
 export function Planets() {
-  const textures = useTexture([marsMap, jupiterMap, "/textures/earth_atmos_2048.jpg"]);
+  const textures = useTexture([marsMap, jupiterMap, earthAtmos]);
   const meshes = useRef<(THREE.Group | null)[]>([]);
   textures.forEach((t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; });
   useFrame((_, delta) => {

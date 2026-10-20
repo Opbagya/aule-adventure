@@ -137,7 +137,7 @@
 .planet-disc { display: block; width: 64px; height: 64px; border-radius: 50%; box-shadow: var(--planet-shadow); background-size: cover; background-position: center; flex-shrink: 0; }
 .planet-mercury { background-color: var(--planet-mercury); background-image: url('./assets/mars-regolith.jpg'); background-blend-mode: luminosity; }
 .planet-venus { background-color: var(--planet-venus); background-image: url('./assets/jupiter-surface.jpg'); background-blend-mode: luminosity; }
-.planet-earth { background-color: var(--planet-earth); background-image: url('/textures/earth_atmos_2048.jpg'); }
+.planet-earth { background-color: var(--planet-earth); background-image: url('./assets/earth_atmos_2048.jpg'); }
 .planet-mars { background-color: var(--planet-mars); background-image: url('./assets/mars-surface.jpg'); }
 .planet-jupiter { background-color: var(--planet-jupiter); background-image: url('./assets/jupiter-surface.jpg'); }
 .planet-saturn { position: relative; background-color: var(--planet-saturn); background-image: url('./assets/jupiter-surface.jpg'); background-blend-mode: luminosity; }

@@ -4,6 +4,10 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { SUN_DIR, sim } from "./sim";
 import { getGlow } from "./textures";
+import earthAtmos from "@/assets/earth_atmos_2048.jpg";
+import earthLights from "@/assets/earth_lights_2048.png";
+import earthClouds from "@/assets/earth_clouds_1024.png";
+import earthSpecular from "@/assets/earth_specular_2048.jpg";
 
 export const EARTH_R = 20000;
 export const EARTH_C = new THREE.Vector3(0, -21450, -1500);
@@ -69,10 +73,10 @@ void main(){
 
 export function Earth() {
   const [day, night, clouds, spec] = useTexture<string[]>([
-    "/textures/earth_atmos_2048.jpg",
-    "/textures/earth_lights_2048.png",
-    "/textures/earth_clouds_1024.png",
-    "/textures/earth_specular_2048.jpg",
+    earthAtmos,
+    earthLights,
+    earthClouds,
+    earthSpecular,
   ]) as THREE.Texture[] as [THREE.Texture, THREE.Texture, THREE.Texture, THREE.Texture];
   const mesh = useRef<THREE.Mesh>(null);
   const root = useRef<THREE.Group>(null);

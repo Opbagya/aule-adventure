@@ -1,11 +1,11 @@
-import { useGLTF, useTexture } from "@react-three/drei";
+import { useTexture } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import regolith from "@/assets/mars-regolith.jpg";
 import earthGround from "@/assets/earth-ground.jpg";
 import iceGround from "@/assets/ice-ground.jpg";
-import asteroidAsset from "@/assets/asteroids.asset.json";
+import { createAsteroidGeometry } from "./Asteroids";
 import { sim } from "./sim";
 import { DESTINATIONS } from "./destinations";
 
@@ -88,29 +88,26 @@ export function LandingSurface() {
 }
 
 function SurfaceRocks() {
-  const { scene } = useGLTF(asteroidAsset.url);
   const group = useMemo(() => {
     const root = new THREE.Group();
-    const source = scene.getObjectByName("asteroid-set_3");
-    if (!source) return root;
-    const template = source.clone(true);
-    template.updateMatrixWorld(true);
-    const bounds = new THREE.Box3().setFromObject(template);
-    const size = bounds.getSize(new THREE.Vector3());
-    template.position.sub(bounds.getCenter(new THREE.Vector3()));
-    const normalized = new THREE.Group(); normalized.add(template);
-    normalized.scale.setScalar(1 / Math.max(size.x, size.y, size.z, 0.001));
+    const mat = new THREE.MeshStandardMaterial({
+      color: "#524f4b",
+      roughness: 0.92,
+      metalness: 0.1,
+      flatShading: true,
+    });
     for (let i = 0; i < 24; i++) {
-      const rock = new THREE.Group(); rock.add(normalized.clone(true));
+      const geom = createAsteroidGeometry(0.8 + (i % 4) * 0.35, i * 2.1);
+      const mesh = new THREE.Mesh(geom, mat);
       const angle = i * 2.399963, radius = 18 + (i * 19 % 120);
-      rock.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-      rock.rotation.set(0.1 * (i % 3), angle, 0.15 * (i % 4));
-      rock.scale.setScalar(0.6 + i % 5 * 0.45);
-      rock.traverse((o) => { if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true; });
-      root.add(rock);
+      mesh.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+      mesh.rotation.set(0.1 * (i % 3), angle, 0.15 * (i % 4));
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      root.add(mesh);
     }
     return root;
-  }, [scene]);
+  }, []);
   const active = useRef("");
   useFrame(() => {
     if (active.current === sim.destination) return;

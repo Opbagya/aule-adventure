@@ -83,7 +83,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Aule Space: Orbital RPOD Simulator" },
       { property: "og:description", content: "Photorealistic orbital docking simulator by Aule Space." },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://aule-adventure.pages.dev/" },
+      { property: "og:image", content: "https://aule-adventure.pages.dev/og-image.png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Aule Space: Orbital RPOD Simulator" },
+      { name: "twitter:description", content: "Photorealistic orbital docking simulator by Aule Space." },
+      { name: "twitter:image", content: "https://aule-adventure.pages.dev/og-image.png" },
           ],
     links: [
       {

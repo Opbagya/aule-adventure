@@ -1,0 +1,12 @@
+{
+  "name": "Aule Space: Orbital RPOD Simulator",
+  "short_name": "Aule Space",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#030712",
+  "theme_color": "#030712",
+  "icons": [
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

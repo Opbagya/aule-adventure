@@ -1,131 +1,131 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <!-- Metallic Bus Gradient -->
-    <linearGradient id="busGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f1f5f9"/>
-      <stop offset="40%" stop-color="#cbd5e1"/>
-      <stop offset="100%" stop-color="#475569"/>
+    <!-- Crisp White Hull Gradient -->
+    <linearGradient id="whiteHull" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#ffffff"/>
+      <stop offset="75%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
     </linearGradient>
 
-    <!-- Gold Thermal Foil Gradient (authentic space craft MLI) -->
+    <!-- Solar Panel Electric Blue Gradient -->
+    <linearGradient id="solarPanel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="40%" stop-color="#0ea5e9"/>
+      <stop offset="80%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+
+    <!-- Gold Thermal Radiator / Sensor Foil -->
     <linearGradient id="goldFoil" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#fef08a"/>
-      <stop offset="45%" stop-color="#eab308"/>
-      <stop offset="85%" stop-color="#ca8a04"/>
-      <stop offset="100%" stop-color="#854d0e"/>
+      <stop offset="50%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#a16207"/>
     </linearGradient>
 
-    <!-- Solar Cell Silicon Blue Gradient -->
-    <linearGradient id="solarCell" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#38bdf8"/>
-      <stop offset="50%" stop-color="#0284c7"/>
-      <stop offset="100%" stop-color="#075985"/>
-    </linearGradient>
-
-    <!-- Dish Reflector Gradient -->
-    <linearGradient id="dishGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Pure White Ceramic Dish Reflector -->
+    <linearGradient id="dishGloss" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="70%" stop-color="#e2e8f0"/>
+      <stop offset="60%" stop-color="#f8fafc"/>
       <stop offset="100%" stop-color="#94a3b8"/>
     </linearGradient>
   </defs>
 
-  <!-- Rotate 45 degrees so wings stretch diagonally, maximizing icon footprint -->
   <g transform="translate(256, 256) rotate(-45) translate(-256, -256)">
-    
-    <!-- === LEFT SOLAR ARRAY WING === -->
-    <!-- Solar wing truss rod -->
-    <rect x="90" y="248" width="100" height="16" rx="6" fill="#64748b" stroke="#334155" stroke-width="3"/>
-    
-    <!-- Left Panel 1 (Outer) -->
+    <!-- === LEFT SOLAR ARRAY WING (Extra Large, Bold, Aesthetic) === -->
+    <!-- Heavy White Boom -->
+    <rect x="30" y="238" width="170" height="36" rx="10" fill="url(#whiteHull)" stroke="#64748b" stroke-width="4"/>
+
+    <!-- Panel 1 (Outer Left) -->
     <g>
-      <rect x="30" y="180" width="85" height="152" rx="10" fill="#0f172a" stroke="#334155" stroke-width="4"/>
-      <rect x="36" y="186" width="73" height="140" rx="6" fill="url(#solarCell)"/>
-      <!-- Photovoltaic cell grid lines -->
-      <line x1="36" y1="221" x2="109" y2="221" stroke="#e0f2fe" stroke-width="2" stroke-opacity="0.6"/>
-      <line x1="36" y1="256" x2="109" y2="256" stroke="#e0f2fe" stroke-width="2.5" stroke-opacity="0.8"/>
-      <line x1="36" y1="291" x2="109" y2="291" stroke="#e0f2fe" stroke-width="2" stroke-opacity="0.6"/>
-      <line x1="72" y1="186" x2="72" y2="326" stroke="#e0f2fe" stroke-width="2.5" stroke-opacity="0.8"/>
+      <rect x="4" y="136" width="92" height="240" rx="16" fill="url(#whiteHull)" stroke="#475569" stroke-width="5"/>
+      <rect x="12" y="144" width="76" height="224" rx="10" fill="url(#solarPanel)"/>
+      <!-- Grid cross-wires in bright cyan/white -->
+      <line x1="12" y1="190" x2="88" y2="190" stroke="#e0f2fe" stroke-width="4" stroke-linecap="round" stroke-opacity="0.95"/>
+      <line x1="12" y1="256" x2="88" y2="256" stroke="#e0f2fe" stroke-width="6" stroke-linecap="round" stroke-opacity="0.95"/>
+      <line x1="12" y1="322" x2="88" y2="322" stroke="#e0f2fe" stroke-width="4" stroke-linecap="round" stroke-opacity="0.95"/>
+      <line x1="50" y1="144" x2="50" y2="368" stroke="#e0f2fe" stroke-width="5" stroke-linecap="round" stroke-opacity="0.95"/>
     </g>
 
-    <!-- Left Panel 2 (Inner) -->
+    <!-- Panel 2 (Inner Left) -->
     <g>
-      <rect x="125" y="180" width="85" height="152" rx="10" fill="#0f172a" stroke="#334155" stroke-width="4"/>
-      <rect x="131" y="186" width="73" height="140" rx="6" fill="url(#solarCell)"/>
-      <!-- Photovoltaic cell grid lines -->
-      <line x1="131" y1="221" x2="204" y2="221" stroke="#e0f2fe" stroke-width="2" stroke-opacity="0.6"/>
-      <line x1="131" y1="256" x2="204" y2="256" stroke="#e0f2fe" stroke-width="2.5" stroke-opacity="0.8"/>
-      <line x1="131" y1="291" x2="204" y2="291" stroke="#e0f2fe" stroke-width="2" stroke-opacity="0.6"/>
-      <line x1="167" y1="186" x2="167" y2="326" stroke="#e0f2fe" stroke-width="2.5" stroke-opacity="0.8"/>
+      <rect x="106" y="136" width="92" height="240" rx="16" fill="url(#whiteHull)" stroke="#475569" stroke-width="5"/>
+      <rect x="114" y="144" width="76" height="224" rx="10" fill="url(#solarPanel)"/>
+      <line x1="114" y1="190" x2="190" y2="190" stroke="#e0f2fe" stroke-width="4" stroke-linecap="round" stroke-opacity="0.95"/>
+      <line x1="114" y1="256" x2="190" y2="256" stroke="#e0f2fe" stroke-width="6" stroke-linecap="round" stroke-opacity="0.95"/>
+      <line x1="114" y1="322" x2="190" y2="322" stroke="#e0f2fe" stroke-width="4" stroke-linecap="round" stroke-opacity="0.95"/>
+      <line x1="152" y1="144" x2="152" y2="368" stroke="#e0f2fe" stroke-width="5" stroke-linecap="round" stroke-opacity="0.95"/>
     </g>
 
-    <!-- === RIGHT SOLAR ARRAY WING === -->
-    <!-- Solar wing truss rod -->
-    <rect x="322" y="248" width="100" height="16" rx="6" fill="#64748b" stroke="#334155" stroke-width="3"/>
+    <!-- === RIGHT SOLAR ARRAY WING (Extra Large, Bold, Aesthetic) === -->
+    <!-- Heavy White Boom -->
+    <rect x="312" y="238" width="170" height="36" rx="10" fill="url(#whiteHull)" stroke="#64748b" stroke-width="4"/>
 
-    <!-- Right Panel 1 (Inner) -->
+    <!-- Panel 3 (Inner Right) -->
     <g>
-      <rect x="302" y="180" width="85" height="152" rx="10" fill="#0f172a" stroke="#334155" stroke-width="4"/>
-      <rect x="308" y="186" width="73" height="140" rx="6" fill="url(#solarCell)"/>
-      <!-- Grid lines -->
-      <line x1="308" y1="221" x2="381" y2="221" stroke="#e0f2fe" stroke-width="2" stroke-opacity="0.6"/>
-      <line x1="308" y1="256" x2="381" y2="256" stroke="#e0f2fe" stroke-width="2.5" stroke-opacity="0.8"/>
-      <line x1="308" y1="291" x2="381" y2="291" stroke="#e0f2fe" stroke-width="2" stroke-opacity="0.6"/>
-      <line x1="344" y1="186" x2="344" y2="326" stroke="#e0f2fe" stroke-width="2.5" stroke-opacity="0.8"/>
+      <rect x="314" y="136" width="92" height="240" rx="16" fill="url(#whiteHull)" stroke="#475569" stroke-width="5"/>
+      <rect x="322" y="144" width="76" height="224" rx="10" fill="url(#solarPanel)"/>
+      <line x1="322" y1="190" x2="398" y2="190" stroke="#e0f2fe" stroke-width="4" stroke-linecap="round" stroke-opacity="0.95"/>
+      <line x1="322" y1="256" x2="398" y2="256" stroke="#e0f2fe" stroke-width="6" stroke-linecap="round" stroke-opacity="0.95"/>
+      <line x1="322" y1="322" x2="398" y2="322" stroke="#e0f2fe" stroke-width="4" stroke-linecap="round" stroke-opacity="0.95"/>
+      <line x1="360" y1="144" x2="360" y2="368" stroke="#e0f2fe" stroke-width="5" stroke-linecap="round" stroke-opacity="0.95"/>
     </g>
 
-    <!-- Right Panel 2 (Outer) -->
+    <!-- Panel 4 (Outer Right) -->
     <g>
-      <rect x="397" y="180" width="85" height="152" rx="10" fill="#0f172a" stroke="#334155" stroke-width="4"/>
-      <rect x="403" y="186" width="73" height="140" rx="6" fill="url(#solarCell)"/>
-      <!-- Grid lines -->
-      <line x1="403" y1="221" x2="476" y2="221" stroke="#e0f2fe" stroke-width="2" stroke-opacity="0.6"/>
-      <line x1="403" y1="256" x2="476" y2="256" stroke="#e0f2fe" stroke-width="2.5" stroke-opacity="0.8"/>
-      <line x1="403" y1="291" x2="476" y2="291" stroke="#e0f2fe" stroke-width="2" stroke-opacity="0.6"/>
-      <line x1="439" y1="186" x2="439" y2="326" stroke="#e0f2fe" stroke-width="2.5" stroke-opacity="0.8"/>
+      <rect x="416" y="136" width="92" height="240" rx="16" fill="url(#whiteHull)" stroke="#475569" stroke-width="5"/>
+      <rect x="424" y="144" width="76" height="224" rx="10" fill="url(#solarPanel)"/>
+      <line x1="424" y1="190" x2="500" y2="190" stroke="#e0f2fe" stroke-width="4" stroke-linecap="round" stroke-opacity="0.95"/>
+      <line x1="424" y1="256" x2="500" y2="256" stroke="#e0f2fe" stroke-width="6" stroke-linecap="round" stroke-opacity="0.95"/>
+      <line x1="424" y1="322" x2="500" y2="322" stroke="#e0f2fe" stroke-width="4" stroke-linecap="round" stroke-opacity="0.95"/>
+      <line x1="462" y1="144" x2="462" y2="368" stroke="#e0f2fe" stroke-width="5" stroke-linecap="round" stroke-opacity="0.95"/>
     </g>
 
-    <!-- === MAIN SATELLITE BUS (CENTRAL BODY) === -->
-    <!-- Gold foil primary structure -->
-    <rect x="206" y="206" width="100" height="100" rx="18" fill="url(#goldFoil)" stroke="#78350f" stroke-width="4"/>
+    <!-- === CENTRAL SATELLITE BUS (MODERN WHITE SCI-FI SLEEK BODY) === -->
+    <!-- Brilliant Gloss White Main Chassis -->
+    <rect x="178" y="178" width="156" height="156" rx="28" fill="url(#whiteHull)" stroke="#475569" stroke-width="7"/>
 
-    <!-- Multi-Layer Insulation quilted patterns -->
-    <line x1="206" y1="240" x2="306" y2="240" stroke="#78350f" stroke-width="2" stroke-opacity="0.5"/>
-    <line x1="206" y1="272" x2="306" y2="272" stroke="#78350f" stroke-width="2" stroke-opacity="0.5"/>
-    <line x1="240" y1="206" x2="240" y2="306" stroke="#78350f" stroke-width="2" stroke-opacity="0.5"/>
-    <line x1="272" y1="206" x2="272" y2="306" stroke="#78350f" stroke-width="2" stroke-opacity="0.5"/>
+    <!-- Gold Thermal Louver Strip (Left) -->
+    <rect x="192" y="194" width="28" height="124" rx="6" fill="url(#goldFoil)" stroke="#854d0e" stroke-width="2.5"/>
+    <line x1="192" y1="225" x2="220" y2="225" stroke="#78350f" stroke-width="2.5"/>
+    <line x1="192" y1="256" x2="220" y2="256" stroke="#78350f" stroke-width="2.5"/>
+    <line x1="192" y1="287" x2="220" y2="287" stroke="#78350f" stroke-width="2.5"/>
 
-    <!-- Central scientific instrument bay / optical camera window -->
-    <rect x="228" y="228" width="56" height="56" rx="12" fill="url(#busGrad)" stroke="#1e293b" stroke-width="3"/>
-    <circle cx="256" cy="256" r="18" fill="#0f172a" stroke="#38bdf8" stroke-width="3"/>
-    <circle cx="256" cy="256" r="8" fill="#0284c7"/>
-    <circle cx="252" cy="252" r="3" fill="#ffffff" opacity="0.9"/>
+    <!-- Optical Sensor Bay in Deep Obsidian with Cyan Halo Ring -->
+    <rect x="234" y="196" width="86" height="120" rx="20" fill="#020617" stroke="#38bdf8" stroke-width="6"/>
+    <circle cx="277" cy="256" r="28" fill="#0284c7" stroke="#e0f2fe" stroke-width="5"/>
+    <circle cx="277" cy="256" r="14" fill="#38bdf8"/>
+    <circle cx="272" cy="251" r="6" fill="#ffffff"/>
 
-    <!-- === HIGH-GAIN PARABOLIC DISH ANTENNA (TOP) === -->
-    <!-- Feed boom strut -->
-    <line x1="256" y1="206" x2="256" y2="130" stroke="#94a3b8" stroke-width="7" stroke-linecap="round"/>
+    <!-- Operational Status Indicators -->
+    <circle cx="312" cy="188" r="7" fill="#10b981" stroke="#34d399" stroke-width="2"/>
+
+    <!-- === AESTHETIC WHITE HIGH-GAIN DISH (TOP) === -->
+    <!-- Heavy White Pylon -->
+    <line x1="256" y1="178" x2="256" y2="68" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+    <line x1="256" y1="178" x2="256" y2="68" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
     
-    <!-- Dish reflector bowl -->
-    <path d="M200 130 C 220 95, 292 95, 312 130 Z" fill="url(#dishGrad)" stroke="#475569" stroke-width="3.5"/>
-    
-    <!-- Sub-reflector feed horn & tripod struts -->
-    <line x1="208" y1="126" x2="256" y2="90" stroke="#64748b" stroke-width="3" stroke-linecap="round"/>
-    <line x1="304" y1="126" x2="256" y2="90" stroke="#64748b" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="256" cy="90" r="6" fill="#38bdf8" stroke="#0284c7" stroke-width="2"/>
+    <!-- Parabolic Reflector in Pure White / Pearl -->
+    <path d="M166 68 C 196 6, 316 6, 346 68 Z" fill="url(#dishGloss)" stroke="#334155" stroke-width="7"/>
+    <!-- Sub-reflector horn & struts -->
+    <line x1="184" y1="64" x2="256" y2="20" stroke="#475569" stroke-width="4.5" stroke-linecap="round"/>
+    <line x1="328" y1="64" x2="256" y2="20" stroke="#475569" stroke-width="4.5" stroke-linecap="round"/>
+    <circle cx="256" cy="20" r="12" fill="#38bdf8" stroke="#ffffff" stroke-width="4"/>
 
-    <!-- Omnidirectional telemetry antennas -->
-    <line x1="222" y1="206" x2="212" y2="170" stroke="#cbd5e1" stroke-width="4" stroke-linecap="round"/>
-    <circle cx="212" cy="170" r="4" fill="#ef4444"/>
-    <line x1="290" y1="206" x2="300" y2="170" stroke="#cbd5e1" stroke-width="4" stroke-linecap="round"/>
-    <circle cx="300" cy="170" r="4" fill="#22c55e"/>
+    <!-- Telemetry Whip Antennas -->
+    <line x1="208" y1="178" x2="186" y2="116" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+    <line x1="208" y1="178" x2="186" y2="116" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="186" cy="116" r="6" fill="#ef4444"/>
 
-    <!-- === APOGEE KICK MOTOR / RCS THRUSTER (BOTTOM) === -->
-    <path d="M238 306 L226 348 L286 348 L274 306 Z" fill="#475569" stroke="#1e293b" stroke-width="3.5"/>
-    <!-- Nozzle interior bell -->
-    <ellipse cx="256" cy="348" rx="30" ry="8" fill="#0f172a" stroke="#38bdf8" stroke-width="2.5"/>
-    
-    <!-- Ion drive / exhaust glow -->
-    <ellipse cx="256" cy="354" rx="16" ry="6" fill="#38bdf8" opacity="0.85"/>
-    <circle cx="256" cy="354" r="4" fill="#ffffff" opacity="0.9"/>
+    <line x1="304" y1="178" x2="326" y2="116" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+    <line x1="304" y1="178" x2="326" y2="116" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="326" cy="116" r="6" fill="#3b82f6"/>
+
+    <!-- === ION DRIVE / THRUSTER (BOTTOM) === -->
+    <path d="M226 334 L212 398 L300 398 L286 334 Z" fill="url(#whiteHull)" stroke="#334155" stroke-width="7"/>
+    <!-- Ion Plume / Nozzle Glow -->
+    <ellipse cx="256" cy="398" rx="44" ry="14" fill="#020617" stroke="#38bdf8" stroke-width="5"/>
+    <ellipse cx="256" cy="404" rx="28" ry="9" fill="#38bdf8" opacity="0.95"/>
+    <circle cx="256" cy="404" r="8" fill="#ffffff"/>
   </g>
 </svg>
